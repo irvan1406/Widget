@@ -3,277 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Masjid - Layout Rapi</title>
+    <title>Admin Masjid - Fixed Path</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f4f7fa; 
-        }
-
-        .glass-card {
-            @apply bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 mb-5 transition-all;
-        }
-
-        .input-group {
-            @apply mb-4 last:mb-0;
-        }
-
-        label {
-            @apply text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2 ml-1;
-        }
-
-        input[type="text"], 
-        input[type="number"], 
-        select, 
-        textarea {
-            @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold text-slate-700;
-        }
-
-        input[type="range"] {
-            @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600;
-        }
-
-        .section-title {
-            @apply flex items-center gap-2 text-sm font-extrabold text-slate-800 mb-4 pb-2 border-b border-slate-50;
-        }
-
-        .status-pill {
-            @apply flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-tighter;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .glass-card { @apply bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 mb-5; }
+        label { @apply text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2; }
+        input, select, textarea { @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold text-slate-700; }
+        .status-pill { @apply flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase; }
     </style>
 </head>
 <body class="max-w-md mx-auto pb-36">
 
-    <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-4 flex justify-between items-center">
-        <div>
-            <h1 class="text-xl font-black italic tracking-tighter text-slate-900">MASJID<span class="text-blue-600">HUB</span></h1>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Remote System</p>
-        </div>
-        <div id="status-container" class="status-pill bg-slate-100 text-slate-500">
-            <span id="status-dot" class="w-2 h-2 bg-slate-400 rounded-full"></span>
+        <h1 class="text-xl font-black italic text-slate-900">MASJID<span class="text-blue-600">HUB</span></h1>
+        <div id="status-container" class="status-pill bg-orange-100 text-orange-600">
             <span id="status-text">MENGHUBUNGKAN...</span>
         </div>
     </header>
 
     <main class="p-5">
-        
-        <!-- Quick Action: Emergency Adzan -->
-        <div class="bg-gradient-to-br from-red-600 to-rose-700 rounded-[2.5rem] p-7 text-white shadow-xl shadow-red-200 mb-8 flex items-center justify-between">
-            <div class="flex-1">
-                <h3 id="alarm-status-text" class="text-2xl font-black italic leading-tight">LAYAR NORMAL</h3>
-                <p class="text-xs font-medium opacity-80">Klik tombol untuk mode adzan</p>
+        <div class="bg-red-600 rounded-[2rem] p-6 text-white mb-6 flex items-center justify-between shadow-lg shadow-red-200">
+            <div>
+                <h3 id="alarm-status-text" class="text-xl font-black italic">LAYAR NORMAL</h3>
+                <p class="text-xs opacity-80">Mode Adzan / Darurat</p>
             </div>
-            <button id="alarm-btn" onclick="toggleAlarm()" class="w-16 h-16 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 transition-all active:scale-90">
-                <i data-lucide="bell" class="w-8 h-8 text-white"></i>
+            <button onclick="toggleAlarm()" class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center border border-white/30 active:scale-90">
+                <i data-lucide="bell" class="w-6 h-6"></i>
             </button>
         </div>
 
-        <!-- Section 1: Running Text -->
         <div class="glass-card">
-            <div class="section-title">
-                <i data-lucide="align-left" class="w-4 h-4 text-amber-500"></i>
-                PENGUMUMAN (TEXT)
-            </div>
-            <div class="input-group">
-                <label>Pesan Running Text</label>
-                <textarea id="runningText" rows="3" placeholder="Contoh: Mohon rapatkan barisan dan matikan handphone..."></textarea>
-            </div>
-            <div class="input-group">
-                <div class="flex justify-between items-center mb-1">
-                    <label>Kecepatan Durasi</label>
-                    <span id="speed-val" class="text-[10px] font-bold text-blue-600">35s</span>
-                </div>
-                <input type="range" id="runningTextSpeed" min="10" max="100" value="35" oninput="document.getElementById('speed-val').innerText = this.value + 's'">
+            <label>Running Text Pengumuman</label>
+            <textarea id="runningText" rows="3"></textarea>
+            <div class="mt-4">
+                <label>Kecepatan Teks (10 - 100)</label>
+                <input type="number" id="runningTextSpeed">
             </div>
         </div>
 
-        <!-- Section 2: Visual & Font -->
         <div class="glass-card">
-            <div class="section-title">
-                <i data-lucide="layout" class="w-4 h-4 text-blue-500"></i>
-                TAMPILAN JAM
-            </div>
+            <label>Koordinat (PENTING UNTUK JADWAL)</label>
             <div class="grid grid-cols-2 gap-4">
-                <div class="input-group">
-                    <label>Jenis Huruf</label>
-                    <select id="fontFamily">
-                        <option value="Inter">Modern Sans</option>
-                        <option value="'JetBrains Mono'">Digital Mono</option>
-                        <option value="serif">Classic Serif</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Ukuran Jam (vw)</label>
-                    <input type="number" id="fontSize" value="20">
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 3: Lokasi -->
-        <div class="glass-card">
-            <div class="section-title">
-                <i data-lucide="map-pin" class="w-4 h-4 text-green-500"></i>
-                KOORDINAT JADWAL
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="input-group">
+                <div>
                     <label>Latitude</label>
                     <input type="text" id="lat" placeholder="-8.1234">
                 </div>
-                <div class="input-group">
+                <div>
                     <label>Longitude</label>
                     <input type="text" id="lng" placeholder="114.1234">
                 </div>
             </div>
         </div>
 
-        <!-- Section 4: Media -->
         <div class="glass-card">
-            <div class="section-title">
-                <i data-lucide="image" class="w-4 h-4 text-purple-500"></i>
-                MEDIA LATAR
-            </div>
-            <div class="input-group">
-                <label>URL Gambar (Link)</label>
-                <input type="text" id="bgUrl" placeholder="https://link-gambar.com/foto.jpg">
-            </div>
-            <div class="input-group">
-                <label>YouTube ID</label>
-                <input type="text" id="ytId" placeholder="Contoh: dQw4w9WgXcQ">
+            <label>Tampilan Jam</label>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label>Ukuran (vw)</label>
+                    <input type="number" id="fontSize">
+                </div>
+                <div>
+                    <label>Font</label>
+                    <select id="fontFamily">
+                        <option value="Inter">Modern</option>
+                        <option value="'JetBrains Mono'">Digital</option>
+                    </select>
+                </div>
             </div>
         </div>
 
+        <div class="glass-card">
+            <label>Media Latar</label>
+            <input type="text" id="bgUrl" placeholder="URL Gambar" class="mb-3">
+            <input type="text" id="ytId" placeholder="YouTube ID">
+        </div>
     </main>
 
-    <!-- Bottom Save Action -->
-    <div class="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-xl border-t border-slate-100 max-w-md mx-auto">
-        <button id="save-btn" onclick="saveData()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-[1.5rem] shadow-xl shadow-blue-100 flex items-center justify-center gap-3 transition-all active:scale-95">
-            <i data-lucide="cloud-lightning" class="w-6 h-6"></i>
-            SIMPAN PERUBAHAN
+    <div class="fixed bottom-0 left-0 right-0 p-6 bg-white/90 border-t max-w-md mx-auto">
+        <button id="save-btn" onclick="saveData()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95">
+            <i data-lucide="save" class="w-5 h-5"></i> SIMPAN PERUBAHAN
         </button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY", "authDomain": "ledd-f6b0f.firebaseapp.com", "projectId": "ledd-f6b0f", "storageBucket": "ledd-f6b0f.firebasestorage.app", "messagingSenderId": "341802454320", "appId": "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'masjid-v1';
-        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
+            authDomain: "ledd-f6b0f.firebaseapp.com",
+            projectId: "ledd-f6b0f",
+            storageBucket: "ledd-f6b0f.firebasestorage.app",
+            messagingSenderId: "341802454320",
+            appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
+        };
+
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings');
+        
+        // SESUAI RULES: /artifacts/{appId}/public/data/{collectionName}/{document}
+        const appId = "masjid-v1"; 
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'main');
 
         async function init() {
-            try {
-                await signInAnonymously(auth);
-                
-                // Realtime Listener
-                onSnapshot(docRef, (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        document.getElementById('runningText').value = data.runningText || '';
-                        document.getElementById('fontSize').value = data.fontSize || 20;
-                        document.getElementById('runningTextSpeed').value = data.runningTextSpeed || 35;
-                        document.getElementById('speed-val').innerText = (data.runningTextSpeed || 35) + 's';
-                        document.getElementById('lat').value = data.lat || '';
-                        document.getElementById('lng').value = data.lng || '';
-                        document.getElementById('bgUrl').value = data.bgUrl || '';
-                        document.getElementById('ytId').value = data.ytId || '';
-                        document.getElementById('fontFamily').value = data.fontFamily || 'Inter';
-                        updateAlarmUI(data.alarmActive);
-                        
-                        setOnlineStatus(true);
-                    }
-                });
-            } catch (e) {
-                console.error(e);
-                setOnlineStatus(false);
-            }
-        }
-
-        function setOnlineStatus(isOnline) {
-            const container = document.getElementById('status-container');
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-
-            if (isOnline) {
-                container.className = "status-pill bg-green-100 text-green-600";
-                dot.className = "w-2 h-2 bg-green-500 rounded-full animate-pulse";
-                text.innerText = "SINKRON";
-            } else {
-                container.className = "status-pill bg-red-100 text-red-600";
-                dot.className = "w-2 h-2 bg-red-500 rounded-full";
-                text.innerText = "OFFLINE";
-            }
+            onSnapshot(docRef, (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    Object.keys(data).forEach(key => {
+                        const el = document.getElementById(key);
+                        if (el) el.value = data[key];
+                    });
+                    document.getElementById('alarm-status-text').innerText = data.alarmActive ? "ADZAN AKTIF!" : "LAYAR NORMAL";
+                    document.getElementById('status-container').className = "status-pill bg-green-100 text-green-600";
+                    document.getElementById('status-text').innerText = "TERHUBUNG";
+                }
+            });
         }
 
         window.saveData = async () => {
             const btn = document.getElementById('save-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin">🌀</span> MENYIMPAN...';
-
-            const payload = {
-                runningText: document.getElementById('runningText').value,
-                fontSize: parseInt(document.getElementById('fontSize').value),
-                runningTextSpeed: parseInt(document.getElementById('runningTextSpeed').value),
-                lat: document.getElementById('lat').value,
-                lng: document.getElementById('lng').value,
-                bgUrl: document.getElementById('bgUrl').value,
-                ytId: document.getElementById('ytId').value,
-                fontFamily: document.getElementById('fontFamily').value,
-                updatedAt: new Date().getTime()
-            };
-
+            btn.innerText = "MENYIMPAN...";
+            const data = {};
+            document.querySelectorAll('input, select, textarea').forEach(i => { if(i.id) data[i.id] = i.value; });
+            data.alarmActive = document.getElementById('alarm-status-text').innerText === "ADZAN AKTIF!";
+            
             try {
-                await setDoc(docRef, payload, { merge: true });
-                btn.innerHTML = '<i data-lucide="check" class="w-6 h-6"></i> BERHASIL!';
-                btn.className = "w-full bg-green-600 text-white font-black py-4 rounded-[1.5rem] shadow-xl flex items-center justify-center gap-3";
-                
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i data-lucide="cloud-lightning" class="w-6 h-6"></i> SIMPAN PERUBAHAN';
-                    btn.className = "w-full bg-blue-600 text-white font-black py-4 rounded-[1.5rem] shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95";
-                    lucide.createIcons();
-                }, 2000);
+                await setDoc(docRef, data, { merge: true });
+                btn.innerText = "BERHASIL DISIMPAN";
+                setTimeout(() => btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> SIMPAN PERUBAHAN', 2000);
             } catch (e) {
-                alert("Gagal menyimpan ke cloud. Periksa koneksi.");
-                btn.disabled = false;
-                btn.innerHTML = '<i data-lucide="alert-triangle" class="w-6 h-6"></i> COBA LAGI';
+                alert("Error: " + e.message);
+                btn.innerText = "GAGAL SIMPAN";
             }
         };
 
         window.toggleAlarm = async () => {
-            const label = document.getElementById('alarm-status-text');
-            const isCurrentlyNormal = label.innerText === "LAYAR NORMAL";
-            try {
-                await updateDoc(docRef, { alarmActive: isCurrentlyNormal });
-            } catch (e) {
-                console.error(e);
-            }
+            const isNormal = document.getElementById('alarm-status-text').innerText === "LAYAR NORMAL";
+            await updateDoc(docRef, { alarmActive: isNormal });
         };
-
-        function updateAlarmUI(active) {
-            const label = document.getElementById('alarm-status-text');
-            const btn = document.getElementById('alarm-btn');
-            if (active) {
-                label.innerText = "ADZAN AKTIF!";
-                btn.className = "w-16 h-16 bg-white rounded-full flex items-center justify-center text-red-600 shadow-xl animate-bounce scale-110";
-                btn.innerHTML = '<i data-lucide="bell-off" class="w-8 h-8"></i>';
-            } else {
-                label.innerText = "LAYAR NORMAL";
-                btn.className = "w-16 h-16 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 transition-all active:scale-90";
-                btn.innerHTML = '<i data-lucide="bell" class="w-8 h-8 text-white"></i>';
-            }
-            lucide.createIcons();
-        }
 
         init();
         lucide.createIcons();
