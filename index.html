@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Masjid Proyektor - Real-time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/adhan@4.4.1/dist/Adhan.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&family=Playfair+Display:wght@700&display=swap');
+        
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            color: white; 
+            transition: background 0.5s ease;
+        }
+
+        #bg-image {
+            position: fixed;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #video-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+        }
+
+        .led-dot-matrix {
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 4px 4px;
+        }
+
+        .marquee-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.9);
+            padding: 1.5rem 0;
+            overflow: hidden;
+            border-top: 2px solid rgba(255,255,255,0.05);
+        }
+
+        .marquee-text {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee var(--speed, 30s) linear infinite;
+            font-size: 2.8rem;
+            font-weight: 700;
+        }
+
+        @keyframes marquee {
+            from { transform: translateX(100vw); }
+            to { transform: translateX(-100%); }
+        }
+
+        .prayer-box {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1.5rem;
+            padding: 1.8rem 1rem;
+            text-align: center;
+            transition: all 0.5s ease;
+        }
+
+        .active-prayer {
+            background: #fff !important;
+            color: #000 !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(255,255,255,0.4);
+        }
+
+        /* Overlay Awal */
+        #interaction-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .pulse-btn {
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 2rem 4rem;
+            border-radius: 2rem;
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Overlay untuk memicu Fullscreen -->
+    <div id="interaction-overlay" onclick="activateDisplay()">
+        <div class="text-center pulse-btn">
+            <h1 class="text-3xl font-black mb-2 tracking-widest">MULAI TAMPILAN</h1>
+            <p class="opacity-50 text-sm uppercase">Klik di mana saja untuk Fullscreen</p>
+        </div>
+    </div>
+
+    <div id="bg-image"></div>
+    <div id="video-layer"></div>
+    <div id="led-overlay" class="fixed inset-0 z-[5] pointer-events-none hidden led-dot-matrix"></div>
+
+    <div class="content-wrapper">
+        <!-- Tanggal & Teks Menuju -->
+        <div class="absolute top-12 text-center">
+            <div id="display-date" class="text-3xl font-bold opacity-70 uppercase tracking-[0.2em] mb-2"></div>
+            <div class="flex flex-col items-center gap-2">
+                <span id="label-menuju" class="text-xl font-bold opacity-50 uppercase tracking-widest">Menuju</span>
+                <div id="next-prayer-countdown" class="text-3xl font-black text-green-400 bg-green-950/30 px-8 py-2 rounded-full border border-green-500/20">--:--:--</div>
+            </div>
+        </div>
+
+        <!-- Jam Utama -->
+        <div id="clock-container" class="text-center">
+            <div id="main-clock" style="font-size: 18vw; line-height: 0.9; font-weight: 900;">00:00</div>
+            <div id="seconds-wrap" class="text-5xl font-bold opacity-20 mt-4">00</div>
+        </div>
+
+        <!-- Baris Jadwal Sholat -->
+        <div class="absolute bottom-40 w-full px-16 grid grid-cols-5 gap-8">
+            <div id="box-fajr" class="prayer-box">
+                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Subuh</div>
+                <div id="time-fajr" class="text-6xl font-black italic">--:--</div>
+            </div>
+            <div id="box-dhuhr" class="prayer-box">
+                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Dzuhur</div>
+                <div id="time-dhuhr" class="text-6xl font-black italic">--:--</div>
+            </div>
+            <div id="box-asr" class="prayer-box">
+                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Ashar</div>
+                <div id="time-asr" class="text-6xl font-black italic">--:--</div>
+            </div>
+            <div id="box-maghrib" class="prayer-box">
+                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Maghrib</div>
+                <div id="time-maghrib" class="text-6xl font-black italic">--:--</div>
+            </div>
+            <div id="box-isha" class="prayer-box">
+                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Isya</div>
+                <div id="time-isha" class="text-6xl font-black italic">--:--</div>
+            </div>
+        </div>
+
+        <!-- Running Text Bawah -->
+        <div id="marquee-bar" class="marquee-container hidden">
+            <div id="marquee-text" class="marquee-text"></div>
+        </div>
+    </div>
+
+    <!-- Alarm Overlay Full Screen -->
+    <div id="alarm-overlay" class="fixed inset-0 z-[9999] bg-white text-black hidden flex-col items-center justify-center text-center">
+        <h1 class="text-[22vw] font-black leading-none">ADZAN</h1>
+        <p class="text-6xl font-bold uppercase tracking-[1em] mt-10">Waktunya Sholat</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
+            authDomain: "ledd-f6b0f.firebaseapp.com",
+            projectId: "ledd-f6b0f",
+            storageBucket: "ledd-f6b0f.firebasestorage.app",
+            messagingSenderId: "341802454320",
+            appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "masjid-banyuwangi-v2";
+
+        // Konfigurasi Default (Banyuwangi)
+        let config = {
+            lat: -8.2192,
+            lng: 114.3691,
+            fontSize: 18,
+            clockColor: "#ffffff",
+            ledMode: false,
+            showSeconds: true,
+            runningTextSpeed: 30,
+            quranActive: true,
+            bgOpacity: 0.3,
+            videoOpacity: 0.3,
+            fontFamily: 'Inter'
+        };
+
+        window.activateDisplay = () => {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) elem.requestFullscreen();
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+            document.body.style.cursor = 'none';
+            document.getElementById('interaction-overlay').style.display = 'none';
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), (snap) => {
+                    if (snap.exists()) {
+                        config = { ...config, ...snap.data() };
+                        applySettings();
+                    }
+                });
+            } else {
+                signInAnonymously(auth);
+            }
+        });
+
+        function applySettings() {
+            const clock = document.getElementById('main-clock');
+            clock.style.fontSize = `${config.fontSize || 18}vw`;
+            clock.style.color = config.clockColor || '#ffffff';
+            clock.style.fontFamily = config.fontFamily || 'Inter';
+            
+            document.getElementById('seconds-wrap').classList.toggle('hidden', !config.showSeconds);
+            document.getElementById('led-overlay').classList.toggle('hidden', !config.ledMode);
+            
+            const bgImg = document.getElementById('bg-image');
+            bgImg.style.backgroundImage = config.bgUrl ? `url(${config.bgUrl})` : 'none';
+            bgImg.style.opacity = config.bgOpacity ?? 0.3;
+
+            const vLayer = document.getElementById('video-layer');
+            if (config.ytId) {
+                const currentYt = vLayer.getAttribute('data-id');
+                if (currentYt !== config.ytId) {
+                    vLayer.innerHTML = `<iframe class="w-full h-full scale-[1.5]" src="https://www.youtube.com/embed/${config.ytId}?autoplay=1&mute=1&loop=1&playlist=${config.ytId}&controls=0" frameborder="0"></iframe>`;
+                    vLayer.setAttribute('data-id', config.ytId);
+                }
+                vLayer.style.opacity = config.videoOpacity ?? 0.3;
+            } else {
+                vLayer.innerHTML = "";
+                vLayer.removeAttribute('data-id');
+            }
+
+            const marquee = document.getElementById('marquee-bar');
+            if (config.quranActive) {
+                marquee.classList.remove('hidden');
+                const txt = document.getElementById('marquee-text');
+                txt.innerText = config.runningText || "Memuat pesan...";
+                txt.style.setProperty('--speed', `${config.runningTextSpeed || 30}s`);
+            } else {
+                marquee.classList.add('hidden');
+            }
+
+            document.getElementById('alarm-overlay').classList.toggle('hidden', !config.alarmActive);
+        }
+
+        function updateTime() {
+            const now = moment().locale('id');
+            document.getElementById('main-clock').innerText = now.format('HH:mm');
+            document.getElementById('seconds-wrap').innerText = now.format('ss');
+            document.getElementById('display-date').innerText = now.format('dddd, D MMMM YYYY');
+
+            updatePrayers(now);
+        }
+
+        function updatePrayers(now) {
+            // Gunakan library adhan untuk kalkulasi
+            const coords = new adhan.Coordinates(config.lat || -8.2192, config.lng || 114.3691);
+            const params = adhan.CalculationMethod.Kemenag();
+            const date = new Date();
+            const pTimes = new adhan.PrayerTimes(coords, date, params);
+
+            const list = [
+                { id: 'fajr', time: pTimes.fajr, label: 'Subuh' },
+                { id: 'dhuhr', time: pTimes.dhuhr, label: 'Dzuhur' },
+                { id: 'asr', time: pTimes.asr, label: 'Ashar' },
+                { id: 'maghrib', time: pTimes.maghrib, label: 'Maghrib' },
+                { id: 'isha', time: pTimes.isha, label: 'Isya' }
+            ];
+
+            let nextP = null;
+            
+            list.forEach(p => {
+                const mTime = moment(p.time);
+                const timeEl = document.getElementById(`time-${p.id}`);
+                if(timeEl) timeEl.innerText = mTime.format('HH:mm');
+                
+                const box = document.getElementById(`box-${p.id}`);
+                // Aktif jika sekarang dalam rentang waktu sholat (misal 15 menit awal)
+                const isActive = now.isSameOrAfter(mTime) && now.isBefore(mTime.clone().add(15, 'minutes'));
+                
+                if (isActive) box.classList.add('active-prayer');
+                else box.classList.remove('active-prayer');
+
+                // Cari sholat berikutnya
+                if (!nextP && mTime.isAfter(now)) {
+                    nextP = { name: p.label, time: mTime };
+                }
+            });
+
+            const countdownEl = document.getElementById('next-prayer-countdown');
+            const labelMenuju = document.getElementById('label-menuju');
+            
+            if (nextP) {
+                const diff = moment.duration(nextP.time.diff(now));
+                labelMenuju.innerText = `Menuju ${nextP.name}`;
+                countdownEl.innerText = `${String(diff.hours()).padStart(2,'0')}:${String(diff.minutes()).padStart(2,'0')}:${String(diff.seconds()).padStart(2,'0')}`;
+            } else {
+                // Jika sudah lewat isya, ambil subuh besok
+                labelMenuju.innerText = "Menuju Subuh";
+                countdownEl.innerText = "--:--:--";
+            }
+        }
+
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>
