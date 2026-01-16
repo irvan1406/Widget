@@ -1,202 +1,191 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Proyektor Masjid</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/m-m-m/Adhan.js@master/dist/Adhan.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=JetBrains+Mono:wght@700&display=swap');
-        
-        body { background: #000; color: #fff; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; margin: 0; }
-        
-        #bg-img { position: fixed; inset: 0; background-size: cover; background-position: center; z-index: -2; transition: opacity 0.5s; }
-        #v-layer { position: fixed; inset: 0; z-index: -1; pointer-events: none; transition: opacity 0.5s; }
-        #overlay { position: fixed; inset: 0; background: #000; z-index: -1; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Display Proyektor Masjid</title>
 
-        .sholat-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; }
-        
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        .alarm-active { animation: blink 0.5s infinite; background: #fff !important; color: #000 !important; }
-        
-        #m-text { display: inline-block; white-space: nowrap; animation: marquee var(--speed, 20s) linear infinite; }
-        @keyframes marquee { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
-    </style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/m-m-m/Adhan.js@master/dist/Adhan.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=JetBrains+Mono:wght@700&display=swap');
+
+body {
+  background:#000;
+  color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  overflow:hidden;
+}
+
+#bg-img {
+  position:fixed;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  z-index:-2;
+}
+
+#v-layer {
+  position:fixed;
+  inset:0;
+  z-index:-1;
+}
+
+#overlay {
+  position:fixed;
+  inset:0;
+  background:#000;
+  z-index:-1;
+}
+
+.sholat-card {
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(10px);
+  border-radius:1.5rem;
+  padding:1.5rem;
+  border:1px solid rgba(255,255,255,.1);
+  text-align:center;
+}
+
+#alarm {
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:black;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+}
+
+#running {
+  white-space:nowrap;
+  display:inline-block;
+}
+
+@keyframes marquee {
+  from { transform:translateX(100vw); }
+  to { transform:translateX(-100%); }
+}
+</style>
 </head>
+
 <body class="flex flex-col items-center justify-center relative">
 
-    <!-- Tombol Inisialisasi (Wajib untuk Suara & Fullscreen) -->
-    <div id="init-btn" class="fixed inset-0 z-[200] bg-blue-600 flex items-center justify-center cursor-pointer">
-        <button onclick="activateFullscreen(this)" class="text-3xl font-black text-white px-10 py-5 border-4 border-white rounded-2xl animate-pulse">
-            KLIK UNTUK AKTIFKAN LAYAR
-        </button>
-    </div>
+<div id="bg-img"></div>
+<div id="v-layer"></div>
+<div id="overlay"></div>
 
-    <!-- Background Layers -->
-    <div id="bg-img"></div>
-    <div id="v-layer"></div>
-    <div id="overlay"></div>
+<div id="alarm">
+  <h1 class="text-[15vw] font-black animate-pulse">ADZAN</h1>
+  <p class="text-4xl font-bold tracking-widest mt-4">WAKTUNYA SHOLAT</p>
+</div>
 
-    <!-- Alarm Overlay -->
-    <div id="alarm" class="fixed inset-0 z-[100] hidden bg-black flex flex-col items-center justify-center">
-        <h1 class="text-[15vw] font-black animate-bounce">ADZAN</h1>
-        <p class="text-4xl font-bold uppercase tracking-widest italic">Waktunya Sholat & Matikan HP</p>
-    </div>
+<div class="z-10 w-full max-w-6xl px-4 flex flex-col items-center text-center">
+  <p id="date" class="text-4xl font-bold uppercase tracking-[0.3em] mb-4 text-blue-400"></p>
 
-    <!-- Main Content -->
-    <div class="z-10 w-full max-w-6xl px-4 flex flex-col items-center text-center">
-        <p id="date" class="text-4xl font-bold uppercase tracking-[0.3em] mb-4 text-blue-400"></p>
-        
-        <div class="bg-white/10 px-10 py-3 rounded-full mb-6 border border-white/20">
-            <p id="label-next" class="text-xl font-black tracking-widest opacity-60">MENUJU ---</p>
-            <p id="countdown" class="text-4xl font-black tabular-nums">00:00:00</p>
-        </div>
+  <div class="bg-white/10 px-10 py-3 rounded-full mb-6 border border-white/20">
+    <p id="label-next" class="text-xl font-black tracking-widest opacity-60">MENUJU ---</p>
+    <p id="countdown" class="text-4xl font-black tabular-nums">00:00:00</p>
+  </div>
 
-        <div class="mb-10 flex items-baseline justify-center">
-            <span id="clock" class="text-[18vw] font-black leading-none tracking-tighter tabular-nums">00:00</span>
-            <span id="seconds" class="text-[6vw] font-bold text-blue-500 ml-6 opacity-80 tabular-nums">00</span>
-        </div>
+  <div class="mb-10 flex items-baseline justify-center">
+    <span id="clock" class="text-[18vw] font-black tabular-nums">00:00</span>
+    <span id="seconds" class="text-[6vw] font-bold text-blue-500 ml-6 tabular-nums">00</span>
+  </div>
 
-        <div class="grid grid-cols-5 gap-6 w-full">
-            <div class="sholat-card"><p class="text-lg font-bold opacity-60 mb-2 uppercase">Subuh</p><p id="t-fajr" class="text-5xl font-black">--:--</p></div>
-            <div class="sholat-card"><p class="text-lg font-bold opacity-60 mb-2 uppercase">Dzuhur</p><p id="t-dhuhr" class="text-5xl font-black">--:--</p></div>
-            <div class="sholat-card"><p class="text-lg font-bold opacity-60 mb-2 uppercase">Ashar</p><p id="t-asr" class="text-5xl font-black">--:--</p></div>
-            <div class="sholat-card"><p class="text-lg font-bold opacity-60 mb-2 uppercase">Maghrib</p><p id="t-maghrib" class="text-5xl font-black">--:--</p></div>
-            <div class="sholat-card"><p class="text-lg font-bold opacity-60 mb-2 uppercase">Isya</p><p id="t-isha" class="text-5xl font-black">--:--</p></div>
-        </div>
-    </div>
+  <div class="grid grid-cols-5 gap-6 w-full">
+    <div class="sholat-card"><p class="opacity-60">Subuh</p><p id="t-fajr" class="text-5xl font-black">--:--</p></div>
+    <div class="sholat-card"><p class="opacity-60">Dzuhur</p><p id="t-dhuhr" class="text-5xl font-black">--:--</p></div>
+    <div class="sholat-card"><p class="opacity-60">Ashar</p><p id="t-asr" class="text-5xl font-black">--:--</p></div>
+    <div class="sholat-card"><p class="opacity-60">Maghrib</p><p id="t-maghrib" class="text-5xl font-black">--:--</p></div>
+    <div class="sholat-card"><p class="opacity-60">Isya</p><p id="t-isha" class="text-5xl font-black">--:--</p></div>
+  </div>
+</div>
 
-    <div class="fixed bottom-0 left-0 right-0 py-8 bg-black/60 backdrop-blur-md border-t border-white/10 overflow-hidden">
-        <div id="m-text">Memuat data...</div>
-    </div>
+<div class="fixed bottom-0 left-0 right-0 py-6 bg-black/60 overflow-hidden">
+  <div id="running" class="text-3xl font-bold"></div>
+</div>
 
-    <audio id="alarm-audio" loop></audio>
+<audio id="audio" loop></audio>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
-            authDomain: "ledd-f6b0f.firebaseapp.com",
-            projectId: "ledd-f6b0f",
-            storageBucket: "ledd-f6b0f.firebasestorage.app",
-            messagingSenderId: "341802454320",
-            appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
-        };
+const app = initializeApp({
+  apiKey:"AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
+  authDomain:"ledd-f6b0f.firebaseapp.com",
+  projectId:"ledd-f6b0f",
+  storageBucket:"ledd-f6b0f.firebasestorage.app",
+  messagingSenderId:"341802454320",
+  appId:"1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
+});
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = "masjid-v1";
-        
-        let conf = { lat: 0, lng: 0, fontSize: 18, runningTextSpeed: 20 };
+const db = getFirestore(app);
+let conf = {};
 
-        window.activateFullscreen = (btn) => {
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            btn.parentElement.remove();
-        };
+onSnapshot(
+  doc(db,'artifacts','masjid-v1','public','data','config','main'),
+  snap => {
+    if(!snap.exists()) return;
+    conf = snap.data();
+    applyConfig();
+  }
+);
 
-        const init = async () => {
-            await signInAnonymously(auth);
-            // PATH DISESUAIKAN DENGAN ADMIN: config/main
-            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'main'), (snap) => {
-                if (snap.exists()) {
-                    conf = { ...conf, ...snap.data() };
-                    updateVisuals();
-                }
-            });
-        };
+function applyConfig(){
+  document.getElementById('clock').style.fontSize = (conf.fontSize||18)+'vw';
+  document.getElementById('clock').style.fontFamily = conf.fontFamily||'Plus Jakarta Sans';
+  document.getElementById('clock').style.color = conf.color||'#fff';
 
-        function updateVisuals() {
-            const clockEl = document.getElementById('clock');
-            clockEl.style.fontSize = `${conf.fontSize || 18}vw`;
-            clockEl.style.fontFamily = conf.fontFamily || 'Plus Jakarta Sans';
-            clockEl.style.color = conf.color || '#fff';
-            
-            document.getElementById('seconds').style.display = conf.mute ? 'none' : 'inline'; // Contoh penggunaan mute untuk sembunyi detik jika mau
-            
-            const mText = document.getElementById('m-text');
-            mText.innerText = conf.runningText || "";
-            mText.style.setProperty('--speed', `${110 - (conf.runningTextSpeed || 35)}s`);
-            mText.style.color = conf.color || '#fff';
-            
-            const bgImg = document.getElementById('bg-img');
-            bgImg.style.backgroundImage = conf.bgUrl ? `url(${conf.bgUrl})` : 'none';
-            bgImg.style.opacity = conf.opacity || 0.5;
+  document.getElementById('running').innerText = conf.runningText||'';
+  document.getElementById('running').style.animation =
+    `marquee ${110-(conf.runningTextSpeed||30)}s linear infinite`;
+  document.getElementById('running').style.color = conf.color||'#fff';
 
-            const vLayer = document.getElementById('v-layer');
-            if (conf.ytId && vLayer.dataset.id !== conf.ytId) {
-                vLayer.innerHTML = `<iframe class="w-full h-full scale-150" src="https://www.youtube.com/embed/${conf.ytId}?autoplay=1&mute=${conf.mute ? 1 : 0}&loop=1&playlist=${conf.ytId}&controls=0" frameborder="0"></iframe>`;
-                vLayer.dataset.id = conf.ytId;
-            } else if (!conf.ytId) {
-                vLayer.innerHTML = "";
-                delete vLayer.dataset.id;
-            }
-            vLayer.style.opacity = conf.opacity || 0.5;
-            
-            // Alarm & Audio
-            const alarmScreen = document.getElementById('alarm');
-            const audio = document.getElementById('alarm-audio');
-            if(conf.alarmActive) {
-                alarmScreen.classList.remove('hidden');
-                document.body.classList.add('alarm-active');
-                if(conf.audioUrl && !conf.mute) {
-                    audio.src = conf.audioUrl;
-                    audio.play().catch(() => {});
-                }
-            } else {
-                alarmScreen.classList.add('hidden');
-                document.body.classList.remove('alarm-active');
-                audio.pause();
-            }
-        }
+  document.getElementById('bg-img').style.backgroundImage =
+    conf.bgUrl ? `url(${conf.bgUrl})` : 'none';
+  document.getElementById('bg-img').style.opacity = conf.opacity||0.5;
 
-        function tick() {
-            const now = moment().locale('id');
-            document.getElementById('clock').innerText = now.format('HH:mm');
-            document.getElementById('seconds').innerText = now.format('ss');
-            document.getElementById('date').innerText = now.format('dddd, D MMMM YYYY');
+  const alarm = document.getElementById('alarm');
+  const audio = document.getElementById('audio');
 
-            if (!conf.lat || !conf.lng) return;
+  if(conf.alarmActive){
+    alarm.style.display='flex';
+    if(conf.audioUrl && !conf.mute){
+      audio.src = conf.audioUrl;
+      audio.play().catch(()=>{});
+    }
+  } else {
+    alarm.style.display='none';
+    audio.pause();
+  }
+}
 
-            const coords = new adhan.Coordinates(parseFloat(conf.lat), parseFloat(conf.lng));
-            const pTimes = new adhan.PrayerTimes(coords, new Date(), adhan.CalculationMethod.Singapore());
-            
-            const list = [
-                ['fajr', pTimes.fajr, 'Subuh'], 
-                ['dhuhr', pTimes.dhuhr, 'Dzuhur'], 
-                ['asr', pTimes.asr, 'Ashar'], 
-                ['maghrib', pTimes.maghrib, 'Maghrib'], 
-                ['isha', pTimes.isha, 'Isya']
-            ];
-            
-            let next = null;
-            list.forEach(([id, time, label]) => {
-                const m = moment(time);
-                document.getElementById(`t-${id}`).innerText = m.format('HH:mm');
-                if (!next && m.isAfter(now)) next = { label, m };
-            });
+setInterval(()=>{
+  const now = moment().locale('id');
+  document.getElementById('clock').innerText = now.format('HH:mm');
+  document.getElementById('seconds').innerText = now.format('ss');
+  document.getElementById('date').innerText = now.format('dddd, D MMMM YYYY');
 
-            const countdownEl = document.getElementById('countdown');
-            const labelEl = document.getElementById('label-next');
-            if (next) {
-                const dur = moment.duration(next.m.diff(now));
-                labelEl.innerText = `MENUJU ${next.label.toUpperCase()}`;
-                countdownEl.innerText = `${String(dur.hours()).padStart(2,'0')}:${String(dur.minutes()).padStart(2,'0')}:${String(dur.seconds()).padStart(2,'0')}`;
-            } else {
-                labelEl.innerText = "MENUJU SUBUH";
-                countdownEl.innerText = "--:--:--";
-            }
-        }
+  if(!conf.lat || !conf.lng) return;
+  const coords = new adhan.Coordinates(+conf.lat,+conf.lng);
+  const times = new adhan.PrayerTimes(coords,new Date(),adhan.CalculationMethod.Singapore());
 
-        setInterval(tick, 1000);
-        init();
-    </script>
+  const map = {
+    fajr:times.fajr,dhuhr:times.dhuhr,asr:times.asr,
+    maghrib:times.maghrib,isha:times.isha
+  };
+
+  Object.keys(map).forEach(k=>{
+    document.getElementById('t-'+k).innerText = moment(map[k]).format('HH:mm');
+  });
+},1000);
+</script>
+
 </body>
-</html>
-
+                                                                          </html>
