@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Masjid Remote</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .setting-card { @apply bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4; }
+        .label-style { @apply text-xs font-black text-slate-400 uppercase tracking-widest block; }
+        input[type="range"] { @apply w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600; }
+        input[type="text"], input[type="number"], select, textarea { 
+            @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-24">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-100 p-4 sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-black italic tracking-tighter">REMOTE CONTROL</h1>
+            <div id="status-online" class="flex items-center gap-2 text-[10px] font-bold text-green-500 bg-green-50 px-3 py-1 rounded-full">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> TERHUBUNG
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+
+        <!-- Emergency Alarm -->
+        <div class="bg-red-600 text-white rounded-3xl p-6 flex items-center justify-between shadow-xl shadow-red-100">
+            <div>
+                <h2 class="text-2xl font-black">ADZAN / ALARM</h2>
+                <p class="text-sm opacity-80">Aktifkan peringatan di layar</p>
+            </div>
+            <button id="alarm-toggle" onclick="toggleAlarm()" class="w-16 h-16 bg-white text-red-600 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all">
+                <i data-lucide="bell" class="w-8 h-8"></i>
+            </button>
+        </div>
+
+        <!-- Tab Jam -->
+        <div class="setting-card">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4"></i> PENGATURAN JAM</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="label-style">Font</label>
+                    <select id="fontFamily">
+                        <option value="Inter">Inter (Modern)</option>
+                        <option value="'JetBrains Mono'">Mono (Digital)</option>
+                        <option value="serif">Serif (Klasik)</option>
+                        <option value="system-ui">System Default</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="label-style">Ukuran (vw)</label>
+                    <input type="number" id="fontSize" value="18">
+                </div>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                <span class="font-bold">Tampilkan Detik</span>
+                <input type="checkbox" id="showSeconds" class="w-6 h-6">
+            </div>
+            <div class="space-y-1">
+                <label class="label-style">Warna Jam</label>
+                <input type="color" id="clockColor" class="w-full h-12 bg-transparent border-none">
+            </div>
+        </div>
+
+        <!-- Tab LED & Running Text -->
+        <div class="setting-card">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4"></i> MODE LED & RUNNING TEXT</h3>
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                <span class="font-bold">Mode LED Matrix</span>
+                <input type="checkbox" id="ledMode" class="w-6 h-6">
+            </div>
+            <div class="space-y-1">
+                <label class="label-style">Pesan / Ayat Al-Qur'an</label>
+                <textarea id="runningText" rows="3"></textarea>
+            </div>
+            <div class="space-y-1">
+                <div class="flex justify-between">
+                    <label class="label-style">Kecepatan Jalan</label>
+                    <span id="speed-val" class="text-xs font-bold text-blue-600">30s</span>
+                </div>
+                <input type="range" id="runningTextSpeed" min="10" max="100" step="5">
+            </div>
+        </div>
+
+        <!-- Sholat & Iqomah -->
+        <div class="setting-card">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> LOKASI & IQOMAH</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="label-style">Latitude</label>
+                    <input type="text" id="lat" value="-8.2192">
+                </div>
+                <div class="space-y-1">
+                    <label class="label-style">Longitude</label>
+                    <input type="text" id="lng" value="114.3691">
+                </div>
+            </div>
+            <div class="space-y-2 pt-2">
+                <label class="label-style text-blue-600">Jeda Iqomah (Menit)</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <input type="number" id="iqSubuh" placeholder="Sbh">
+                    <input type="number" id="iqDzuhur" placeholder="Dzh">
+                    <input type="number" id="iqAshar" placeholder="Asr">
+                    <input type="number" id="iqMaghrib" placeholder="Mgr">
+                    <input type="number" id="iqIsya" placeholder="Isy">
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallpaper & YouTube -->
+        <div class="setting-card">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> WALLPAPER & VIDEO</h3>
+            <div class="space-y-1">
+                <label class="label-style">URL Gambar Background</label>
+                <input type="text" id="bgUrl" placeholder="https://...">
+            </div>
+            <div class="space-y-1">
+                <label class="label-style">YouTube ID</label>
+                <input type="text" id="ytId" placeholder="mBdfM-T_m20">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="label-style">Opacity Gambar</label>
+                    <input type="range" id="bgOpacity" min="0" max="1" step="0.1">
+                </div>
+                <div class="space-y-1">
+                    <label class="label-style">Opacity Video</label>
+                    <input type="range" id="videoOpacity" min="0" max="1" step="0.1">
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Actions -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-slate-100 flex gap-4 max-w-md mx-auto">
+        <button onclick="save()" class="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
+            SIMPAN PERUBAHAN
+        </button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
+            authDomain: "ledd-f6b0f.firebaseapp.com",
+            projectId: "ledd-f6b0f",
+            storageBucket: "ledd-f6b0f.firebasestorage.app",
+            messagingSenderId: "341802454320",
+            appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "masjid-banyuwangi-v2";
+
+        let currentSettings = { alarmActive: false };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings'));
+                if (snap.exists()) {
+                    currentSettings = snap.data();
+                    loadFields();
+                }
+            } else {
+                signInAnonymously(auth);
+            }
+        });
+
+        function loadFields() {
+            const fields = ['fontFamily', 'fontSize', 'clockColor', 'showSeconds', 'ledMode', 'runningText', 'runningTextSpeed', 'lat', 'lng', 'bgUrl', 'ytId', 'bgOpacity', 'videoOpacity'];
+            fields.forEach(f => {
+                const el = document.getElementById(f);
+                if (el.type === 'checkbox') el.checked = currentSettings[f];
+                else el.value = currentSettings[f] || (el.type === 'range' ? 0.3 : '');
+            });
+            updateAlarmUI();
+        }
+
+        window.save = async () => {
+            const data = {};
+            const fields = ['fontFamily', 'fontSize', 'clockColor', 'showSeconds', 'ledMode', 'runningText', 'runningTextSpeed', 'lat', 'lng', 'bgUrl', 'ytId', 'bgOpacity', 'videoOpacity'];
+            fields.forEach(f => {
+                const el = document.getElementById(f);
+                data[f] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.type === 'range' ? parseFloat(el.value) : el.value);
+            });
+            data.alarmActive = currentSettings.alarmActive;
+            data.quranActive = true;
+
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), data);
+            alert("✅ Sinkronisasi Berhasil!");
+        };
+
+        window.toggleAlarm = async () => {
+            currentSettings.alarmActive = !currentSettings.alarmActive;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), { alarmActive: currentSettings.alarmActive });
+            updateAlarmUI();
+        };
+
+        function updateAlarmUI() {
+            const btn = document.getElementById('alarm-toggle');
+            if (currentSettings.alarmActive) {
+                btn.classList.add('bg-black', 'text-white');
+                btn.classList.remove('bg-white', 'text-red-600');
+            } else {
+                btn.classList.remove('bg-black', 'text-white');
+                btn.classList.add('bg-white', 'text-red-600');
+            }
+        }
+
+        document.getElementById('runningTextSpeed').addEventListener('input', (e) => {
+            document.getElementById('speed-val').innerText = `${e.target.value}s`;
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+
