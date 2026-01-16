@@ -3,152 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Masjid Remote</title>
+    <title>Admin - Masjid Remote Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .setting-card { @apply bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4; }
-        .label-style { @apply text-xs font-black text-slate-400 uppercase tracking-widest block; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        .setting-card { @apply bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-4; }
+        .label-style { @apply text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2; }
+        
         input[type="range"] { @apply w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600; }
+        
         input[type="text"], input[type="number"], select, textarea { 
-            @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all;
+            @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold;
+        }
+        
+        .status-badge { @apply flex items-center gap-2 text-[10px] font-bold px-4 py-2 rounded-full transition-all; }
+        
+        .btn-primary {
+            @apply bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 pb-24">
+<body class="pb-32">
 
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-slate-100 p-4 sticky top-0 z-50">
+    <!-- Header Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 sticky top-0 z-50">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-black italic tracking-tighter">REMOTE CONTROL</h1>
-            <div id="status-online" class="flex items-center gap-2 text-[10px] font-bold text-green-500 bg-green-50 px-3 py-1 rounded-full">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> TERHUBUNG
+            <div>
+                <h1 class="text-xl font-black italic tracking-tighter text-slate-900">REMOTE MSJ</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Banyuwangi Edition</p>
+            </div>
+            <div id="status-display" class="status-badge bg-orange-50 text-orange-500">
+                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span> MENGHUBUNGKAN...
             </div>
         </div>
     </nav>
 
-    <main class="max-w-md mx-auto p-4 space-y-6">
-
-        <!-- Emergency Alarm -->
-        <div class="bg-red-600 text-white rounded-3xl p-6 flex items-center justify-between shadow-xl shadow-red-100">
-            <div>
-                <h2 class="text-2xl font-black">ADZAN / ALARM</h2>
-                <p class="text-sm opacity-80">Aktifkan peringatan di layar</p>
+    <main id="main-content" class="max-w-md mx-auto p-4 space-y-6 opacity-40 pointer-events-none transition-all duration-700">
+        
+        <!-- Emergency Adzan Toggle -->
+        <div class="bg-red-600 text-white rounded-[2.5rem] p-8 flex items-center justify-between shadow-2xl shadow-red-200">
+            <div class="space-y-1">
+                <h2 class="text-2xl font-black italic uppercase leading-none">Mode Adzan</h2>
+                <p class="text-xs font-medium opacity-80" id="alarm-status-text">Layar Standar Aktif</p>
             </div>
-            <button id="alarm-toggle" onclick="toggleAlarm()" class="w-16 h-16 bg-white text-red-600 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                <i data-lucide="bell" class="w-8 h-8"></i>
+            <button id="alarm-toggle" onclick="toggleAlarm()" class="w-20 h-20 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all">
+                <i data-lucide="bell" id="alarm-icon" class="w-10 h-10"></i>
             </button>
         </div>
 
-        <!-- Tab Jam -->
+        <!-- Tampilan Jam Section -->
         <div class="setting-card">
-            <h3 class="font-bold flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4"></i> PENGATURAN JAM</h3>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-blue-50 rounded-lg text-blue-600"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                <h3 class="font-extrabold text-slate-800">KONFIGURASI JAM</h3>
+            </div>
+            
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1">
-                    <label class="label-style">Font</label>
+                    <label class="label-style">Gaya Font</label>
                     <select id="fontFamily">
-                        <option value="Inter">Inter (Modern)</option>
-                        <option value="'JetBrains Mono'">Mono (Digital)</option>
-                        <option value="serif">Serif (Klasik)</option>
-                        <option value="system-ui">System Default</option>
+                        <option value="Inter">Modern Sans</option>
+                        <option value="'JetBrains Mono'">Digital Mono</option>
+                        <option value="'Playfair Display'">Classic Serif</option>
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="label-style">Ukuran (vw)</label>
-                    <input type="number" id="fontSize" value="18">
+                    <label class="label-style">Ukuran Jam</label>
+                    <input type="number" id="fontSize" value="20">
                 </div>
             </div>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                <span class="font-bold">Tampilkan Detik</span>
-                <input type="checkbox" id="showSeconds" class="w-6 h-6">
-            </div>
-            <div class="space-y-1">
-                <label class="label-style">Warna Jam</label>
-                <input type="color" id="clockColor" class="w-full h-12 bg-transparent border-none">
+
+            <div class="flex items-center justify-between p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+                <div class="flex flex-col">
+                    <span class="font-bold text-slate-700">Detik Berjalan</span>
+                    <span class="text-[10px] text-slate-400">Tampilkan angka detik</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="showSeconds" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
             </div>
         </div>
 
-        <!-- Tab LED & Running Text -->
+        <!-- Running Text Section -->
         <div class="setting-card">
-            <h3 class="font-bold flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4"></i> MODE LED & RUNNING TEXT</h3>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                <span class="font-bold">Mode LED Matrix</span>
-                <input type="checkbox" id="ledMode" class="w-6 h-6">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-amber-50 rounded-lg text-amber-600"><i data-lucide="type" class="w-5 h-5"></i></div>
+                <h3 class="font-extrabold text-slate-800">PESAN BERJALAN</h3>
             </div>
+            
             <div class="space-y-1">
-                <label class="label-style">Pesan / Ayat Al-Qur'an</label>
-                <textarea id="runningText" rows="3"></textarea>
+                <label class="label-style">Isi Pesan / Maklumat</label>
+                <textarea id="runningText" rows="3" placeholder="Contoh: Mohon matikan handphone selama ibadah berlangsung..."></textarea>
             </div>
-            <div class="space-y-1">
-                <div class="flex justify-between">
-                    <label class="label-style">Kecepatan Jalan</label>
-                    <span id="speed-val" class="text-xs font-bold text-blue-600">30s</span>
+
+            <div class="space-y-3 pt-2">
+                <div class="flex justify-between items-center">
+                    <label class="label-style">Durasi Animasi (Lama)</label>
+                    <span id="speed-label" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">35s</span>
                 </div>
-                <input type="range" id="runningTextSpeed" min="10" max="100" step="5">
+                <input type="range" id="runningTextSpeed" min="10" max="100" value="35">
+                <p class="text-[10px] text-slate-400 italic">Semakin kecil angka, semakin cepat teks berjalan.</p>
             </div>
         </div>
 
-        <!-- Sholat & Iqomah -->
+        <!-- Background & Multimedia -->
         <div class="setting-card">
-            <h3 class="font-bold flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> LOKASI & IQOMAH</h3>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-purple-50 rounded-lg text-purple-600"><i data-lucide="monitor" class="w-5 h-5"></i></div>
+                <h3 class="font-extrabold text-slate-800">VISUAL & MEDIA</h3>
+            </div>
+
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="label-style">URL Wallpaper (Link Gambar)</label>
+                    <input type="text" id="bgUrl" placeholder="https://domain.com/gambar.jpg">
+                </div>
+                <div class="space-y-1">
+                    <label class="label-style">YouTube Video ID</label>
+                    <input type="text" id="ytId" placeholder="Contoh: mBdfM-T_m20">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="label-style">Transparansi Gambar</label>
+                        <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0.3">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="label-style">Transparansi Video</label>
+                        <input type="range" id="videoOpacity" min="0" max="1" step="0.1" value="0.3">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lokasi Geografis -->
+        <div class="setting-card">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-green-50 rounded-lg text-green-600"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                <h3 class="font-extrabold text-slate-800">KOORDINAT LOKASI</h3>
+            </div>
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1">
                     <label class="label-style">Latitude</label>
-                    <input type="text" id="lat" value="-8.2192">
+                    <input type="text" id="lat" placeholder="-8.2192">
                 </div>
                 <div class="space-y-1">
                     <label class="label-style">Longitude</label>
-                    <input type="text" id="lng" value="114.3691">
-                </div>
-            </div>
-            <div class="space-y-2 pt-2">
-                <label class="label-style text-blue-600">Jeda Iqomah (Menit)</label>
-                <div class="grid grid-cols-5 gap-2">
-                    <input type="number" id="iqSubuh" placeholder="Sbh">
-                    <input type="number" id="iqDzuhur" placeholder="Dzh">
-                    <input type="number" id="iqAshar" placeholder="Asr">
-                    <input type="number" id="iqMaghrib" placeholder="Mgr">
-                    <input type="number" id="iqIsya" placeholder="Isy">
-                </div>
-            </div>
-        </div>
-
-        <!-- Wallpaper & YouTube -->
-        <div class="setting-card">
-            <h3 class="font-bold flex items-center gap-2"><i data-lucide="image" class="w-4 h-4"></i> WALLPAPER & VIDEO</h3>
-            <div class="space-y-1">
-                <label class="label-style">URL Gambar Background</label>
-                <input type="text" id="bgUrl" placeholder="https://...">
-            </div>
-            <div class="space-y-1">
-                <label class="label-style">YouTube ID</label>
-                <input type="text" id="ytId" placeholder="mBdfM-T_m20">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                    <label class="label-style">Opacity Gambar</label>
-                    <input type="range" id="bgOpacity" min="0" max="1" step="0.1">
-                </div>
-                <div class="space-y-1">
-                    <label class="label-style">Opacity Video</label>
-                    <input type="range" id="videoOpacity" min="0" max="1" step="0.1">
+                    <input type="text" id="lng" placeholder="114.3691">
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- Bottom Actions -->
-    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-slate-100 flex gap-4 max-w-md mx-auto">
-        <button onclick="save()" class="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
-            SIMPAN PERUBAHAN
+    <!-- Footer Action -->
+    <div id="footer-action" class="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-xl border-t border-slate-100 max-w-md mx-auto z-[60] opacity-40 pointer-events-none transition-all">
+        <button onclick="saveChanges()" id="save-btn" class="btn-primary w-full">
+            <i data-lucide="save" class="w-5 h-5"></i> SIMPAN SEMUA PERUBAHAN
         </button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
@@ -163,65 +188,122 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = "masjid-banyuwangi-v2";
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings');
 
-        let currentSettings = { alarmActive: false };
+        let localData = {};
 
+        // Inisialisasi Aplikasi
         onAuthStateChanged(auth, async (user) => {
+            const status = document.getElementById('status-display');
             if (user) {
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings'));
-                if (snap.exists()) {
-                    currentSettings = snap.data();
-                    loadFields();
+                try {
+                    const snap = await getDoc(docRef);
+                    if (snap.exists()) {
+                        localData = snap.data();
+                    } else {
+                        // Jika dokumen belum ada di Firestore, buatkan defaultnya
+                        localData = {
+                            fontFamily: 'Inter', fontSize: 20, clockColor: '#ffffff',
+                            showSeconds: true, runningText: 'Selamat Datang di Masjid Kami - Mari Luruskan Shaf',
+                            runningTextSpeed: 35, lat: -8.2192, lng: 114.3691,
+                            bgUrl: '', ytId: '', bgOpacity: 0.3, videoOpacity: 0.3,
+                            alarmActive: false, quranActive: true
+                        };
+                        await setDoc(docRef, localData);
+                    }
+                    
+                    syncToUI();
+                    
+                    // Aktifkan Kontrol
+                    document.getElementById('main-content').classList.remove('opacity-40', 'pointer-events-none');
+                    document.getElementById('footer-action').classList.remove('opacity-40', 'pointer-events-none');
+                    
+                    status.className = "status-badge bg-green-50 text-green-500";
+                    status.innerHTML = `<span class="w-2 h-2 bg-green-500 rounded-full"></span> ONLINE`;
+                } catch (e) {
+                    status.className = "status-badge bg-red-50 text-red-600";
+                    status.innerHTML = `<span class="w-2 h-2 bg-red-600 rounded-full"></span> AKSES DITOLAK`;
+                    console.error(e);
                 }
             } else {
                 signInAnonymously(auth);
             }
         });
 
-        function loadFields() {
-            const fields = ['fontFamily', 'fontSize', 'clockColor', 'showSeconds', 'ledMode', 'runningText', 'runningTextSpeed', 'lat', 'lng', 'bgUrl', 'ytId', 'bgOpacity', 'videoOpacity'];
-            fields.forEach(f => {
-                const el = document.getElementById(f);
-                if (el.type === 'checkbox') el.checked = currentSettings[f];
-                else el.value = currentSettings[f] || (el.type === 'range' ? 0.3 : '');
+        function syncToUI() {
+            Object.keys(localData).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = localData[key];
+                    else el.value = localData[key];
+                }
             });
             updateAlarmUI();
+            document.getElementById('speed-label').innerText = (localData.runningTextSpeed || 35) + 's';
         }
 
-        window.save = async () => {
-            const data = {};
-            const fields = ['fontFamily', 'fontSize', 'clockColor', 'showSeconds', 'ledMode', 'runningText', 'runningTextSpeed', 'lat', 'lng', 'bgUrl', 'ytId', 'bgOpacity', 'videoOpacity'];
-            fields.forEach(f => {
-                const el = document.getElementById(f);
-                data[f] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.type === 'range' ? parseFloat(el.value) : el.value);
-            });
-            data.alarmActive = currentSettings.alarmActive;
-            data.quranActive = true;
+        window.saveChanges = async () => {
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.innerText = "SEDANG MENYIMPAN...";
 
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), data);
-            alert("✅ Sinkronisasi Berhasil!");
+            const newUpdate = {};
+            const allInputs = document.querySelectorAll('input, select, textarea');
+            allInputs.forEach(input => {
+                if (!input.id) return;
+                let val = input.value;
+                if (input.type === 'checkbox') val = input.checked;
+                if (input.type === 'number' || input.id.includes('Opacity')) val = parseFloat(input.value);
+                newUpdate[input.id] = val;
+            });
+
+            try {
+                await updateDoc(docRef, newUpdate);
+                showNotification("Berhasil disimpan!");
+            } catch (e) {
+                alert("Gagal menyimpan. Cek aturan Firestore Rules Anda.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> SIMPAN SEMUA PERUBAHAN`;
+                lucide.createIcons();
+            }
         };
 
         window.toggleAlarm = async () => {
-            currentSettings.alarmActive = !currentSettings.alarmActive;
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), { alarmActive: currentSettings.alarmActive });
-            updateAlarmUI();
+            localData.alarmActive = !localData.alarmActive;
+            try {
+                await updateDoc(docRef, { alarmActive: localData.alarmActive });
+                updateAlarmUI();
+            } catch (e) {
+                alert("Error saat memicu alarm.");
+            }
         };
 
         function updateAlarmUI() {
             const btn = document.getElementById('alarm-toggle');
-            if (currentSettings.alarmActive) {
-                btn.classList.add('bg-black', 'text-white');
-                btn.classList.remove('bg-white', 'text-red-600');
+            const txt = document.getElementById('alarm-status-text');
+            if (localData.alarmActive) {
+                btn.className = "w-20 h-20 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all animate-pulse";
+                txt.innerText = "MODE ADZAN SEDANG AKTIF";
+                txt.className = "text-xs font-bold opacity-100 text-yellow-300";
             } else {
-                btn.classList.remove('bg-black', 'text-white');
-                btn.classList.add('bg-white', 'text-red-600');
+                btn.className = "w-20 h-20 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all";
+                txt.innerText = "Layar Standar Aktif";
+                txt.className = "text-xs font-medium opacity-80";
             }
         }
 
-        document.getElementById('runningTextSpeed').addEventListener('input', (e) => {
-            document.getElementById('speed-val').innerText = `${e.target.value}s`;
-        });
+        function showNotification(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold z-[100] shadow-2xl transition-all animate-bounce";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        document.getElementById('runningTextSpeed').oninput = (e) => {
+            document.getElementById('speed-label').innerText = e.target.value + 's';
+        };
 
         lucide.createIcons();
     </script>
