@@ -3,237 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Masjid Remote Control</title>
+    <title>Display Masjid Proyektor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/adhan@4.4.1/dist/Adhan.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f8fafc;
-        }
-        .setting-card { @apply bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-4; }
-        .label-style { @apply text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2; }
-        
-        input[type="range"] { @apply w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600; }
-        
-        input[type="text"], input[type="number"], select, textarea { 
-            @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold;
-        }
-        
-        .status-badge { @apply flex items-center gap-2 text-[10px] font-bold px-4 py-2 rounded-full transition-all; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap');
+        body { background: #000; color: white; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .marquee { white-space: nowrap; animation: move var(--speed, 35s) linear infinite; font-size: 3rem; color: #ffcc00; font-weight: 900; }
+        @keyframes move { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
     </style>
 </head>
-<body class="pb-32">
+<body>
+    <div id="interaction-overlay" onclick="this.remove()" class="fixed inset-0 bg-black z-[999] flex items-center justify-center cursor-pointer">
+        <h1 class="text-3xl font-black animate-pulse">KLIK UNTUK FULLSCREEN</h1>
+    </div>
 
-    <!-- Header -->
-    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 sticky top-0 z-50">
-        <div class="max-w-md mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-xl font-black italic tracking-tighter text-slate-900">REMOTE MSJ</h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Full Control</p>
-            </div>
-            <div id="status-display" class="status-badge bg-orange-50 text-orange-500">
-                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span> MENGHUBUNGKAN...
-            </div>
-        </div>
-    </nav>
+    <div id="bg-img" class="fixed inset-0 opacity-30 bg-center bg-cover"></div>
+    <div id="v-layer" class="fixed inset-0 opacity-30"></div>
 
-    <main id="main-content" class="max-w-md mx-auto p-4 space-y-6 opacity-40 pointer-events-none transition-all duration-700">
-        
-        <!-- Mode Adzan -->
-        <div class="bg-red-600 text-white rounded-[2.5rem] p-8 flex items-center justify-between shadow-2xl shadow-red-200">
-            <div class="space-y-1">
-                <h2 class="text-2xl font-black italic uppercase leading-none">Mode Adzan</h2>
-                <p class="text-xs font-medium opacity-80" id="alarm-status-text">Layar Standar Aktif</p>
-            </div>
-            <button id="alarm-toggle" onclick="toggleAlarm()" class="w-20 h-20 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all">
-                <i data-lucide="bell" id="alarm-icon" class="w-10 h-10"></i>
-            </button>
-        </div>
-
-        <!-- Konfigurasi Jam -->
-        <div class="setting-card">
-            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-blue-600"></i> KONFIGURASI JAM</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                    <label class="label-style">Gaya Font</label>
-                    <select id="fontFamily">
-                        <option value="Inter">Modern Sans</option>
-                        <option value="'JetBrains Mono'">Digital Mono</option>
-                    </select>
-                </div>
-                <div class="space-y-1">
-                    <label class="label-style">Ukuran Jam (vw)</label>
-                    <input type="number" id="fontSize" value="20">
-                </div>
-            </div>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-                <span class="font-bold text-sm">Tampilkan Detik</span>
-                <input type="checkbox" id="showSeconds" class="w-6 h-6 accent-blue-600">
+    <div class="relative z-10 h-screen flex flex-col justify-between p-12 text-center">
+        <div>
+            <div id="date" class="text-3xl font-bold opacity-60 uppercase mb-4"></div>
+            <div class="bg-green-600/20 border border-green-500/40 px-8 py-2 rounded-full inline-block text-2xl font-black">
+                <span id="label-next">MENUNGGU...</span> <span id="countdown" class="ml-4 font-mono">00:00:00</span>
             </div>
         </div>
 
-        <!-- Running Text -->
-        <div class="setting-card">
-            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="type" class="w-5 h-5 text-amber-600"></i> PESAN BERJALAN</h3>
-            <textarea id="runningText" rows="3" placeholder="Masukkan pesan..."></textarea>
-            <div class="space-y-3 pt-2">
-                <div class="flex justify-between items-center">
-                    <label class="label-style">Durasi Animasi (Speed)</label>
-                    <span id="speed-label" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">35s</span>
-                </div>
-                <input type="range" id="runningTextSpeed" min="10" max="100" value="35">
+        <div id="clock" class="text-[25vw] leading-none font-black tracking-tighter">00:00</div>
+
+        <div class="grid grid-cols-5 gap-6 mb-20">
+            <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                <div class="opacity-50 font-bold mb-2 uppercase">Subuh</div>
+                <div id="t-fajr" class="text-5xl font-black">--:--</div>
+            </div>
+            <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                <div class="opacity-50 font-bold mb-2 uppercase">Dzuhur</div>
+                <div id="t-dhuhr" class="text-5xl font-black">--:--</div>
+            </div>
+            <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                <div class="opacity-50 font-bold mb-2 uppercase">Ashar</div>
+                <div id="t-asr" class="text-5xl font-black">--:--</div>
+            </div>
+            <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                <div class="opacity-50 font-bold mb-2 uppercase">Maghrib</div>
+                <div id="t-maghrib" class="text-5xl font-black">--:--</div>
+            </div>
+            <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                <div class="opacity-50 font-bold mb-2 uppercase">Isya</div>
+                <div id="t-isha" class="text-5xl font-black">--:--</div>
             </div>
         </div>
+    </div>
 
-        <!-- Multimedia -->
-        <div class="setting-card">
-            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="monitor" class="w-5 h-5 text-purple-600"></i> VISUAL & MEDIA</h3>
-            <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="label-style">URL Wallpaper (Background)</label>
-                    <input type="text" id="bgUrl" placeholder="https://...">
-                </div>
-                <div class="space-y-1">
-                    <label class="label-style">YouTube ID</label>
-                    <input type="text" id="ytId" placeholder="ID Video">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1">
-                        <label class="label-style">Transparansi BG</label>
-                        <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0.3">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="label-style">Transparansi Video</label>
-                        <input type="range" id="videoOpacity" min="0" max="1" step="0.1" value="0.3">
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="fixed bottom-0 w-full bg-black py-4 border-t border-white/10 overflow-hidden">
+        <div id="m-text" class="marquee"></div>
+    </div>
 
-        <!-- Lokasi -->
-        <div class="setting-card">
-            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="map-pin" class="w-5 h-5 text-green-600"></i> KOORDINAT LOKASI</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <input type="text" id="lat" placeholder="Latitude">
-                <input type="text" id="lng" placeholder="Longitude">
-            </div>
-        </div>
-
-    </main>
-
-    <div id="footer-action" class="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 max-w-md mx-auto z-[60] opacity-40 pointer-events-none transition-all">
-        <button onclick="saveChanges()" id="save-btn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-            <i data-lucide="save" class="w-5 h-5"></i> SIMPAN PERUBAHAN
-        </button>
+    <div id="alarm" class="fixed inset-0 bg-white text-black z-[1000] hidden flex flex-col items-center justify-center">
+        <h1 class="text-[25vw] font-black italic">ADZAN</h1>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
-            authDomain: "ledd-f6b0f.firebaseapp.com",
-            projectId: "ledd-f6b0f",
-            storageBucket: "ledd-f6b0f.firebasestorage.app",
-            messagingSenderId: "341802454320",
-            appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
-        };
-
+        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY", "authDomain": "ledd-f6b0f.firebaseapp.com", "projectId": "ledd-f6b0f", "storageBucket": "ledd-f6b0f.firebasestorage.app", "messagingSenderId": "341802454320", "appId": "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'masjid-display-v1';
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings');
+        let conf = { lat: -8.2192, lng: 114.3691, runningTextSpeed: 35 };
 
-        let currentData = {};
-
-        onAuthStateChanged(auth, async (user) => {
-            const status = document.getElementById('status-display');
+        onAuthStateChanged(auth, (user) => {
             if (user) {
-                try {
-                    const snap = await getDoc(docRef);
-                    if (!snap.exists()) {
-                        await setDoc(docRef, { 
-                            fontFamily: 'Inter', fontSize: 20, 
-                            showSeconds: true, runningText: 'Selamat Datang', 
-                            runningTextSpeed: 35, lat: -8.2192, lng: 114.3691,
-                            bgUrl: '', ytId: '', bgOpacity: 0.3, videoOpacity: 0.3,
-                            alarmActive: false
-                        });
+                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), (snap) => {
+                    if (snap.exists()) {
+                        conf = snap.data();
+                        updateVisuals();
                     }
-                    currentData = (await getDoc(docRef)).data();
-                    fillUI();
-                    
-                    status.innerText = "ONLINE";
-                    status.className = "status-badge bg-green-50 text-green-500";
-                    document.getElementById('main-content').classList.remove('opacity-40', 'pointer-events-none');
-                    document.getElementById('footer-action').classList.remove('opacity-40', 'pointer-events-none');
-                } catch (e) {
-                    status.innerText = "CEK RULES!";
-                    status.className = "status-badge bg-red-50 text-red-500";
-                }
-            } else {
-                signInAnonymously(auth);
-            }
+                });
+            } else { signInAnonymously(auth); }
         });
 
-        function fillUI() {
-            Object.keys(currentData).forEach(key => {
-                const el = document.getElementById(key);
-                if (el) {
-                    if (el.type === 'checkbox') el.checked = currentData[key];
-                    else el.value = currentData[key];
-                }
-            });
-            document.getElementById('speed-label').innerText = (currentData.runningTextSpeed || 35) + 's';
-            updateAlarmUI();
-        }
-
-        window.saveChanges = async () => {
-            const btn = document.getElementById('save-btn');
-            btn.innerText = "MENYIMPAN...";
-            const updates = {};
-            document.querySelectorAll('input, select, textarea').forEach(i => {
-                if(i.id) {
-                    updates[i.id] = i.type === 'checkbox' ? i.checked : 
-                                   (i.type === 'number' || i.id.includes('Opacity')) ? parseFloat(i.value) : i.value;
-                }
-            });
-            try {
-                await updateDoc(docRef, updates);
-                btn.innerText = "BERHASIL!";
-                setTimeout(() => { btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> SIMPAN PERUBAHAN`; lucide.createIcons(); }, 2000);
-            } catch (e) {
-                alert("Gagal Simpan. Cek Firestore Rules.");
-                btn.innerText = "GAGAL";
+        function updateVisuals() {
+            document.getElementById('m-text').innerText = conf.runningText || "";
+            document.getElementById('m-text').style.setProperty('--speed', `${conf.runningTextSpeed}s`);
+            document.getElementById('bg-img').style.backgroundImage = conf.bgUrl ? `url(${conf.bgUrl})` : 'none';
+            if (conf.ytId) {
+                document.getElementById('v-layer').innerHTML = `<iframe class="w-full h-full scale-150" src="https://www.youtube.com/embed/${conf.ytId}?autoplay=1&mute=1&loop=1&playlist=${conf.ytId}&controls=0" frameborder="0"></iframe>`;
             }
-        };
-
-        window.toggleAlarm = async () => {
-            currentData.alarmActive = !currentData.alarmActive;
-            await updateDoc(docRef, { alarmActive: currentData.alarmActive });
-            updateAlarmUI();
-        };
-
-        function updateAlarmUI() {
-            const btn = document.getElementById('alarm-toggle');
-            const txt = document.getElementById('alarm-status-text');
-            btn.className = currentData.alarmActive ? 
-                "w-20 h-20 bg-black text-white rounded-full flex items-center justify-center shadow-xl animate-pulse" : 
-                "w-20 h-20 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl";
-            txt.innerText = currentData.alarmActive ? "ADZAN SEDANG AKTIF" : "Layar Standar Aktif";
+            document.getElementById('alarm').classList.toggle('hidden', !conf.alarmActive);
         }
 
-        document.getElementById('runningTextSpeed').oninput = (e) => {
-            document.getElementById('speed-label').innerText = e.target.value + 's';
-        };
+        function tick() {
+            const now = moment().locale('id');
+            document.getElementById('clock').innerText = now.format('HH:mm');
+            document.getElementById('date').innerText = now.format('dddd, D MMMM YYYY');
 
-        lucide.createIcons();
+            const coords = new adhan.Coordinates(conf.lat || -8.2192, conf.lng || 114.3691);
+            const pTimes = new adhan.PrayerTimes(coords, new Date(), adhan.CalculationMethod.Kemenag());
+            
+            const list = [['fajr', pTimes.fajr, 'Subuh'], ['dhuhr', pTimes.dhuhr, 'Dzuhur'], ['asr', pTimes.asr, 'Ashar'], ['maghrib', pTimes.maghrib, 'Maghrib'], ['isha', pTimes.isha, 'Isya']];
+            let next = null;
+            list.forEach(([id, time, label]) => {
+                const m = moment(time);
+                document.getElementById(`t-${id}`).innerText = m.format('HH:mm');
+                if (!next && m.isAfter(now)) next = { label, m };
+            });
+
+            if (next) {
+                const dur = moment.duration(next.m.diff(now));
+                document.getElementById('label-next').innerText = `MENUJU ${next.label.toUpperCase()}`;
+                document.getElementById('countdown').innerText = `${String(dur.hours()).padStart(2,'0')}:${String(dur.minutes()).padStart(2,'0')}:${String(dur.seconds()).padStart(2,'0')}`;
+            }
+        }
+        setInterval(tick, 1000);
     </script>
 </body>
 </html>
