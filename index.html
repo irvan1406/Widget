@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Masjid Proyektor - Real-time</title>
+    <title>Display Masjid Proyektor - Modern</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/adhan@4.4.1/dist/Adhan.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&family=Playfair+Display:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@800&display=swap');
         
         body { 
             margin: 0; 
             overflow: hidden; 
             background-color: #000; 
             color: white; 
-            transition: background 0.5s ease;
+            font-family: 'Inter', sans-serif;
         }
 
         #bg-image {
@@ -35,39 +35,41 @@
             pointer-events: none;
         }
 
-        .content-wrapper {
+        .main-container {
             position: relative;
             z-index: 10;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.6) 100%);
-            pointer-events: none;
+            justify-content: space-between;
+            background: radial-gradient(circle, transparent 10%, rgba(0,0,0,0.8) 100%);
+            padding: 4rem 2rem;
         }
 
         .led-dot-matrix {
-            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 4px 4px;
+            background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 5px 5px;
         }
 
         .marquee-container {
-            position: absolute;
+            position: fixed;
             bottom: 0;
+            left: 0;
             width: 100%;
-            background: rgba(0,0,0,0.9);
-            padding: 1.5rem 0;
+            background: #000;
+            padding: 1.2rem 0;
+            border-top: 2px solid rgba(255,255,255,0.1);
             overflow: hidden;
-            border-top: 2px solid rgba(255,255,255,0.05);
+            z-index: 50;
         }
 
         .marquee-text {
             display: inline-block;
             white-space: nowrap;
-            animation: marquee var(--speed, 30s) linear infinite;
-            font-size: 2.8rem;
-            font-weight: 700;
+            animation: marquee var(--speed, 35s) linear infinite;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #ffcc00; /* Warna khas running text LED */
         }
 
         @keyframes marquee {
@@ -75,24 +77,25 @@
             to { transform: translateX(-100%); }
         }
 
-        .prayer-box {
-            background: rgba(20, 20, 20, 0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.1);
+        .prayer-card {
+            background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 1.5rem;
-            padding: 1.8rem 1rem;
+            padding: 1.5rem 1rem;
             text-align: center;
-            transition: all 0.5s ease;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .active-prayer {
-            background: #fff !important;
-            color: #000 !important;
-            transform: scale(1.1);
-            box-shadow: 0 0 40px rgba(255,255,255,0.4);
+            background: #ffffff !important;
+            color: #000000 !important;
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 20px 50px rgba(255,255,255,0.3);
         }
 
-        /* Overlay Awal */
+        .active-prayer div { color: #000 !important; opacity: 1 !important; }
+
         #interaction-overlay {
             position: fixed;
             inset: 0;
@@ -104,27 +107,24 @@
             cursor: pointer;
         }
 
-        .pulse-btn {
-            border: 2px solid rgba(255,255,255,0.3);
-            padding: 2rem 4rem;
-            border-radius: 2rem;
-            animation: pulse-border 2s infinite;
-        }
-
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
-            70% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
-            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        .countdown-badge {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            padding: 0.5rem 2rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
         }
     </style>
 </head>
 <body>
 
-    <!-- Overlay untuk memicu Fullscreen -->
+    <!-- Overlay Start -->
     <div id="interaction-overlay" onclick="activateDisplay()">
-        <div class="text-center pulse-btn">
-            <h1 class="text-3xl font-black mb-2 tracking-widest">MULAI TAMPILAN</h1>
-            <p class="opacity-50 text-sm uppercase">Klik di mana saja untuk Fullscreen</p>
+        <div class="text-center p-12 border-2 border-white/20 rounded-[3rem] animate-pulse">
+            <h1 class="text-4xl font-black tracking-tighter mb-4 uppercase italic">Bismillah - Klik Untuk Memulai</h1>
+            <p class="opacity-40 text-sm tracking-[0.3em]">MODE PROYEKTOR FULLSCREEN</p>
         </div>
     </div>
 
@@ -132,56 +132,57 @@
     <div id="video-layer"></div>
     <div id="led-overlay" class="fixed inset-0 z-[5] pointer-events-none hidden led-dot-matrix"></div>
 
-    <div class="content-wrapper">
-        <!-- Tanggal & Teks Menuju -->
-        <div class="absolute top-12 text-center">
-            <div id="display-date" class="text-3xl font-bold opacity-70 uppercase tracking-[0.2em] mb-2"></div>
-            <div class="flex flex-col items-center gap-2">
-                <span id="label-menuju" class="text-xl font-bold opacity-50 uppercase tracking-widest">Menuju</span>
-                <div id="next-prayer-countdown" class="text-3xl font-black text-green-400 bg-green-950/30 px-8 py-2 rounded-full border border-green-500/20">--:--:--</div>
+    <div class="main-container">
+        <!-- HEADER: Date & Countdown Menuju Sholat -->
+        <div class="flex flex-col items-center">
+            <div id="display-date" class="text-3xl font-bold opacity-60 uppercase tracking-[0.25em] mb-6"></div>
+            
+            <div class="countdown-badge">
+                <span id="label-menuju" class="text-2xl font-bold uppercase tracking-widest text-green-400">Menuju --</span>
+                <span id="next-prayer-countdown" class="text-4xl font-black text-white font-mono">00:00:00</span>
             </div>
         </div>
 
-        <!-- Jam Utama -->
-        <div id="clock-container" class="text-center">
-            <div id="main-clock" style="font-size: 18vw; line-height: 0.9; font-weight: 900;">00:00</div>
-            <div id="seconds-wrap" class="text-5xl font-bold opacity-20 mt-4">00</div>
+        <!-- CENTER: Main Clock -->
+        <div id="clock-wrapper" class="text-center">
+            <div id="main-clock" class="font-black tracking-tighter" style="font-size: 20vw; line-height: 0.8;">00:00</div>
+            <div id="seconds-wrap" class="text-6xl font-bold opacity-20 mt-6">00</div>
         </div>
 
-        <!-- Baris Jadwal Sholat -->
-        <div class="absolute bottom-40 w-full px-16 grid grid-cols-5 gap-8">
-            <div id="box-fajr" class="prayer-box">
-                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Subuh</div>
-                <div id="time-fajr" class="text-6xl font-black italic">--:--</div>
+        <!-- FOOTER: Prayer Grid -->
+        <div class="grid grid-cols-5 gap-6 w-full max-w-7xl mx-auto mb-20">
+            <div id="box-fajr" class="prayer-card">
+                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Subuh</div>
+                <div id="time-fajr" class="text-6xl font-black">--:--</div>
             </div>
-            <div id="box-dhuhr" class="prayer-box">
-                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Dzuhur</div>
-                <div id="time-dhuhr" class="text-6xl font-black italic">--:--</div>
+            <div id="box-dhuhr" class="prayer-card">
+                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Dzuhur</div>
+                <div id="time-dhuhr" class="text-6xl font-black">--:--</div>
             </div>
-            <div id="box-asr" class="prayer-box">
-                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Ashar</div>
-                <div id="time-asr" class="text-6xl font-black italic">--:--</div>
+            <div id="box-asr" class="prayer-card">
+                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Ashar</div>
+                <div id="time-asr" class="text-6xl font-black">--:--</div>
             </div>
-            <div id="box-maghrib" class="prayer-box">
-                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Maghrib</div>
-                <div id="time-maghrib" class="text-6xl font-black italic">--:--</div>
+            <div id="box-maghrib" class="prayer-card">
+                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Maghrib</div>
+                <div id="time-maghrib" class="text-6xl font-black">--:--</div>
             </div>
-            <div id="box-isha" class="prayer-box">
-                <div class="text-2xl opacity-50 font-bold uppercase mb-2">Isya</div>
-                <div id="time-isha" class="text-6xl font-black italic">--:--</div>
+            <div id="box-isha" class="prayer-card">
+                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Isya</div>
+                <div id="time-isha" class="text-6xl font-black">--:--</div>
             </div>
-        </div>
-
-        <!-- Running Text Bawah -->
-        <div id="marquee-bar" class="marquee-container hidden">
-            <div id="marquee-text" class="marquee-text"></div>
         </div>
     </div>
 
-    <!-- Alarm Overlay Full Screen -->
-    <div id="alarm-overlay" class="fixed inset-0 z-[9999] bg-white text-black hidden flex-col items-center justify-center text-center">
-        <h1 class="text-[22vw] font-black leading-none">ADZAN</h1>
-        <p class="text-6xl font-bold uppercase tracking-[1em] mt-10">Waktunya Sholat</p>
+    <!-- Running Text -->
+    <div id="marquee-bar" class="marquee-container hidden">
+        <div id="marquee-text" class="marquee-text"></div>
+    </div>
+
+    <!-- Alarm View -->
+    <div id="alarm-overlay" class="fixed inset-0 z-[10000] bg-white text-black hidden flex-col items-center justify-center text-center">
+        <h1 class="text-[20vw] font-black leading-none italic tracking-tighter">ADZAN</h1>
+        <p class="text-6xl font-bold uppercase tracking-[0.5em] mt-10 animate-bounce">Waktunya Sholat</p>
     </div>
 
     <script type="module">
@@ -203,15 +204,14 @@
         const db = getFirestore(app);
         const appId = "masjid-banyuwangi-v2";
 
-        // Konfigurasi Default (Banyuwangi)
         let config = {
             lat: -8.2192,
             lng: 114.3691,
-            fontSize: 18,
+            fontSize: 20,
             clockColor: "#ffffff",
             ledMode: false,
             showSeconds: true,
-            runningTextSpeed: 30,
+            runningTextSpeed: 35,
             quranActive: true,
             bgOpacity: 0.3,
             videoOpacity: 0.3,
@@ -221,7 +221,6 @@
         window.activateDisplay = () => {
             const elem = document.documentElement;
             if (elem.requestFullscreen) elem.requestFullscreen();
-            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
             document.body.style.cursor = 'none';
             document.getElementById('interaction-overlay').style.display = 'none';
         };
@@ -241,7 +240,7 @@
 
         function applySettings() {
             const clock = document.getElementById('main-clock');
-            clock.style.fontSize = `${config.fontSize || 18}vw`;
+            clock.style.fontSize = `${config.fontSize || 20}vw`;
             clock.style.color = config.clockColor || '#ffffff';
             clock.style.fontFamily = config.fontFamily || 'Inter';
             
@@ -254,8 +253,7 @@
 
             const vLayer = document.getElementById('video-layer');
             if (config.ytId) {
-                const currentYt = vLayer.getAttribute('data-id');
-                if (currentYt !== config.ytId) {
+                if (vLayer.getAttribute('data-id') !== config.ytId) {
                     vLayer.innerHTML = `<iframe class="w-full h-full scale-[1.5]" src="https://www.youtube.com/embed/${config.ytId}?autoplay=1&mute=1&loop=1&playlist=${config.ytId}&controls=0" frameborder="0"></iframe>`;
                     vLayer.setAttribute('data-id', config.ytId);
                 }
@@ -269,8 +267,8 @@
             if (config.quranActive) {
                 marquee.classList.remove('hidden');
                 const txt = document.getElementById('marquee-text');
-                txt.innerText = config.runningText || "Memuat pesan...";
-                txt.style.setProperty('--speed', `${config.runningTextSpeed || 30}s`);
+                txt.innerText = config.runningText || "Mari rapatkan shaf dan luruskan barisan.";
+                txt.style.setProperty('--speed', `${config.runningTextSpeed || 35}s`);
             } else {
                 marquee.classList.add('hidden');
             }
@@ -278,21 +276,15 @@
             document.getElementById('alarm-overlay').classList.toggle('hidden', !config.alarmActive);
         }
 
-        function updateTime() {
+        function refresh() {
             const now = moment().locale('id');
             document.getElementById('main-clock').innerText = now.format('HH:mm');
             document.getElementById('seconds-wrap').innerText = now.format('ss');
             document.getElementById('display-date').innerText = now.format('dddd, D MMMM YYYY');
 
-            updatePrayers(now);
-        }
-
-        function updatePrayers(now) {
-            // Gunakan library adhan untuk kalkulasi
             const coords = new adhan.Coordinates(config.lat || -8.2192, config.lng || 114.3691);
             const params = adhan.CalculationMethod.Kemenag();
-            const date = new Date();
-            const pTimes = new adhan.PrayerTimes(coords, date, params);
+            const pTimes = new adhan.PrayerTimes(coords, new Date(), params);
 
             const list = [
                 { id: 'fajr', time: pTimes.fajr, label: 'Subuh' },
@@ -302,42 +294,33 @@
                 { id: 'isha', time: pTimes.isha, label: 'Isya' }
             ];
 
-            let nextP = null;
-            
+            let next = null;
             list.forEach(p => {
-                const mTime = moment(p.time);
-                const timeEl = document.getElementById(`time-${p.id}`);
-                if(timeEl) timeEl.innerText = mTime.format('HH:mm');
-                
+                const m = moment(p.time);
+                document.getElementById(`time-${p.id}`).innerText = m.format('HH:mm');
                 const box = document.getElementById(`box-${p.id}`);
-                // Aktif jika sekarang dalam rentang waktu sholat (misal 15 menit awal)
-                const isActive = now.isSameOrAfter(mTime) && now.isBefore(mTime.clone().add(15, 'minutes'));
+                const isActive = now.isSameOrAfter(m) && now.isBefore(m.clone().add(20, 'minutes'));
                 
-                if (isActive) box.classList.add('active-prayer');
-                else box.classList.remove('active-prayer');
-
-                // Cari sholat berikutnya
-                if (!nextP && mTime.isAfter(now)) {
-                    nextP = { name: p.label, time: mTime };
-                }
+                box.className = `prayer-card ${isActive ? 'active-prayer' : ''}`;
+                if (!next && m.isAfter(now)) next = { name: p.label, time: m };
             });
 
             const countdownEl = document.getElementById('next-prayer-countdown');
-            const labelMenuju = document.getElementById('label-menuju');
+            const labelEl = document.getElementById('label-menuju');
             
-            if (nextP) {
-                const diff = moment.duration(nextP.time.diff(now));
-                labelMenuju.innerText = `Menuju ${nextP.name}`;
-                countdownEl.innerText = `${String(diff.hours()).padStart(2,'0')}:${String(diff.minutes()).padStart(2,'0')}:${String(diff.seconds()).padStart(2,'0')}`;
+            if (next) {
+                const dur = moment.duration(next.time.diff(now));
+                labelEl.innerText = `Menuju ${next.name}`;
+                countdownEl.innerText = `${String(dur.hours()).padStart(2,'0')}:${String(dur.minutes()).padStart(2,'0')}:${String(dur.seconds()).padStart(2,'0')}`;
             } else {
-                // Jika sudah lewat isya, ambil subuh besok
-                labelMenuju.innerText = "Menuju Subuh";
+                labelEl.innerText = "Menuju Subuh";
                 countdownEl.innerText = "--:--:--";
             }
         }
 
-        setInterval(updateTime, 1000);
-        updateTime();
+        setInterval(refresh, 1000);
+        refresh();
     </script>
 </body>
 </html>
+
