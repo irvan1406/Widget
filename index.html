@@ -3,192 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Masjid Proyektor - Modern</title>
+    <title>Admin - Masjid Remote Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/adhan@4.4.1/dist/Adhan.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background-color: #000; 
-            color: white; 
-            font-family: 'Inter', sans-serif;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
         }
-
-        #bg-image {
-            position: fixed;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
-            z-index: 0;
-            pointer-events: none;
+        .setting-card { @apply bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-4; }
+        .label-style { @apply text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2; }
+        
+        input[type="range"] { @apply w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600; }
+        
+        input[type="text"], input[type="number"], select, textarea { 
+            @apply w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold;
         }
-
-        #video-layer {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .main-container {
-            position: relative;
-            z-index: 10;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background: radial-gradient(circle, transparent 10%, rgba(0,0,0,0.8) 100%);
-            padding: 4rem 2rem;
-        }
-
-        .led-dot-matrix {
-            background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
-            background-size: 5px 5px;
-        }
-
-        .marquee-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #000;
-            padding: 1.2rem 0;
-            border-top: 2px solid rgba(255,255,255,0.1);
-            overflow: hidden;
-            z-index: 50;
-        }
-
-        .marquee-text {
-            display: inline-block;
-            white-space: nowrap;
-            animation: marquee var(--speed, 35s) linear infinite;
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #ffcc00; /* Warna khas running text LED */
-        }
-
-        @keyframes marquee {
-            from { transform: translateX(100vw); }
-            to { transform: translateX(-100%); }
-        }
-
-        .prayer-card {
-            background: rgba(15, 15, 15, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 1.5rem;
-            padding: 1.5rem 1rem;
-            text-align: center;
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .active-prayer {
-            background: #ffffff !important;
-            color: #000000 !important;
-            transform: translateY(-15px) scale(1.05);
-            box-shadow: 0 20px 50px rgba(255,255,255,0.3);
-        }
-
-        .active-prayer div { color: #000 !important; opacity: 1 !important; }
-
-        #interaction-overlay {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .countdown-badge {
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.4);
-            padding: 0.5rem 2rem;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            gap: 1rem;
-        }
+        
+        .status-badge { @apply flex items-center gap-2 text-[10px] font-bold px-4 py-2 rounded-full transition-all; }
     </style>
 </head>
-<body>
+<body class="pb-32">
 
-    <!-- Overlay Start -->
-    <div id="interaction-overlay" onclick="activateDisplay()">
-        <div class="text-center p-12 border-2 border-white/20 rounded-[3rem] animate-pulse">
-            <h1 class="text-4xl font-black tracking-tighter mb-4 uppercase italic">Bismillah - Klik Untuk Memulai</h1>
-            <p class="opacity-40 text-sm tracking-[0.3em]">MODE PROYEKTOR FULLSCREEN</p>
-        </div>
-    </div>
-
-    <div id="bg-image"></div>
-    <div id="video-layer"></div>
-    <div id="led-overlay" class="fixed inset-0 z-[5] pointer-events-none hidden led-dot-matrix"></div>
-
-    <div class="main-container">
-        <!-- HEADER: Date & Countdown Menuju Sholat -->
-        <div class="flex flex-col items-center">
-            <div id="display-date" class="text-3xl font-bold opacity-60 uppercase tracking-[0.25em] mb-6"></div>
-            
-            <div class="countdown-badge">
-                <span id="label-menuju" class="text-2xl font-bold uppercase tracking-widest text-green-400">Menuju --</span>
-                <span id="next-prayer-countdown" class="text-4xl font-black text-white font-mono">00:00:00</span>
+    <!-- Header -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-black italic tracking-tighter text-slate-900">REMOTE MSJ</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Full Control</p>
+            </div>
+            <div id="status-display" class="status-badge bg-orange-50 text-orange-500">
+                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span> MENGHUBUNGKAN...
             </div>
         </div>
+    </nav>
 
-        <!-- CENTER: Main Clock -->
-        <div id="clock-wrapper" class="text-center">
-            <div id="main-clock" class="font-black tracking-tighter" style="font-size: 20vw; line-height: 0.8;">00:00</div>
-            <div id="seconds-wrap" class="text-6xl font-bold opacity-20 mt-6">00</div>
+    <main id="main-content" class="max-w-md mx-auto p-4 space-y-6 opacity-40 pointer-events-none transition-all duration-700">
+        
+        <!-- Mode Adzan -->
+        <div class="bg-red-600 text-white rounded-[2.5rem] p-8 flex items-center justify-between shadow-2xl shadow-red-200">
+            <div class="space-y-1">
+                <h2 class="text-2xl font-black italic uppercase leading-none">Mode Adzan</h2>
+                <p class="text-xs font-medium opacity-80" id="alarm-status-text">Layar Standar Aktif</p>
+            </div>
+            <button id="alarm-toggle" onclick="toggleAlarm()" class="w-20 h-20 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all">
+                <i data-lucide="bell" id="alarm-icon" class="w-10 h-10"></i>
+            </button>
         </div>
 
-        <!-- FOOTER: Prayer Grid -->
-        <div class="grid grid-cols-5 gap-6 w-full max-w-7xl mx-auto mb-20">
-            <div id="box-fajr" class="prayer-card">
-                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Subuh</div>
-                <div id="time-fajr" class="text-6xl font-black">--:--</div>
+        <!-- Konfigurasi Jam -->
+        <div class="setting-card">
+            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-blue-600"></i> KONFIGURASI JAM</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="label-style">Gaya Font</label>
+                    <select id="fontFamily">
+                        <option value="Inter">Modern Sans</option>
+                        <option value="'JetBrains Mono'">Digital Mono</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="label-style">Ukuran Jam (vw)</label>
+                    <input type="number" id="fontSize" value="20">
+                </div>
             </div>
-            <div id="box-dhuhr" class="prayer-card">
-                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Dzuhur</div>
-                <div id="time-dhuhr" class="text-6xl font-black">--:--</div>
-            </div>
-            <div id="box-asr" class="prayer-card">
-                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Ashar</div>
-                <div id="time-asr" class="text-6xl font-black">--:--</div>
-            </div>
-            <div id="box-maghrib" class="prayer-card">
-                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Maghrib</div>
-                <div id="time-maghrib" class="text-6xl font-black">--:--</div>
-            </div>
-            <div id="box-isha" class="prayer-card">
-                <div class="text-xl opacity-50 font-bold uppercase mb-1 tracking-wider">Isya</div>
-                <div id="time-isha" class="text-6xl font-black">--:--</div>
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                <span class="font-bold text-sm">Tampilkan Detik</span>
+                <input type="checkbox" id="showSeconds" class="w-6 h-6 accent-blue-600">
             </div>
         </div>
-    </div>
 
-    <!-- Running Text -->
-    <div id="marquee-bar" class="marquee-container hidden">
-        <div id="marquee-text" class="marquee-text"></div>
-    </div>
+        <!-- Running Text -->
+        <div class="setting-card">
+            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="type" class="w-5 h-5 text-amber-600"></i> PESAN BERJALAN</h3>
+            <textarea id="runningText" rows="3" placeholder="Masukkan pesan..."></textarea>
+            <div class="space-y-3 pt-2">
+                <div class="flex justify-between items-center">
+                    <label class="label-style">Durasi Animasi (Speed)</label>
+                    <span id="speed-label" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">35s</span>
+                </div>
+                <input type="range" id="runningTextSpeed" min="10" max="100" value="35">
+            </div>
+        </div>
 
-    <!-- Alarm View -->
-    <div id="alarm-overlay" class="fixed inset-0 z-[10000] bg-white text-black hidden flex-col items-center justify-center text-center">
-        <h1 class="text-[20vw] font-black leading-none italic tracking-tighter">ADZAN</h1>
-        <p class="text-6xl font-bold uppercase tracking-[0.5em] mt-10 animate-bounce">Waktunya Sholat</p>
+        <!-- Multimedia -->
+        <div class="setting-card">
+            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="monitor" class="w-5 h-5 text-purple-600"></i> VISUAL & MEDIA</h3>
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="label-style">URL Wallpaper (Background)</label>
+                    <input type="text" id="bgUrl" placeholder="https://...">
+                </div>
+                <div class="space-y-1">
+                    <label class="label-style">YouTube ID</label>
+                    <input type="text" id="ytId" placeholder="ID Video">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="label-style">Transparansi BG</label>
+                        <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0.3">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="label-style">Transparansi Video</label>
+                        <input type="range" id="videoOpacity" min="0" max="1" step="0.1" value="0.3">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lokasi -->
+        <div class="setting-card">
+            <h3 class="font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="map-pin" class="w-5 h-5 text-green-600"></i> KOORDINAT LOKASI</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="lat" placeholder="Latitude">
+                <input type="text" id="lng" placeholder="Longitude">
+            </div>
+        </div>
+
+    </main>
+
+    <div id="footer-action" class="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 max-w-md mx-auto z-[60] opacity-40 pointer-events-none transition-all">
+        <button onclick="saveChanges()" id="save-btn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+            <i data-lucide="save" class="w-5 h-5"></i> SIMPAN PERUBAHAN
+        </button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
@@ -202,124 +147,93 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = "masjid-banyuwangi-v2";
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'masjid-display-v1';
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings');
 
-        let config = {
-            lat: -8.2192,
-            lng: 114.3691,
-            fontSize: 20,
-            clockColor: "#ffffff",
-            ledMode: false,
-            showSeconds: true,
-            runningTextSpeed: 35,
-            quranActive: true,
-            bgOpacity: 0.3,
-            videoOpacity: 0.3,
-            fontFamily: 'Inter'
-        };
+        let currentData = {};
 
-        window.activateDisplay = () => {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen();
-            document.body.style.cursor = 'none';
-            document.getElementById('interaction-overlay').style.display = 'none';
-        };
-
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
+            const status = document.getElementById('status-display');
             if (user) {
-                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings'), (snap) => {
-                    if (snap.exists()) {
-                        config = { ...config, ...snap.data() };
-                        applySettings();
+                try {
+                    const snap = await getDoc(docRef);
+                    if (!snap.exists()) {
+                        await setDoc(docRef, { 
+                            fontFamily: 'Inter', fontSize: 20, 
+                            showSeconds: true, runningText: 'Selamat Datang', 
+                            runningTextSpeed: 35, lat: -8.2192, lng: 114.3691,
+                            bgUrl: '', ytId: '', bgOpacity: 0.3, videoOpacity: 0.3,
+                            alarmActive: false
+                        });
                     }
-                });
+                    currentData = (await getDoc(docRef)).data();
+                    fillUI();
+                    
+                    status.innerText = "ONLINE";
+                    status.className = "status-badge bg-green-50 text-green-500";
+                    document.getElementById('main-content').classList.remove('opacity-40', 'pointer-events-none');
+                    document.getElementById('footer-action').classList.remove('opacity-40', 'pointer-events-none');
+                } catch (e) {
+                    status.innerText = "CEK RULES!";
+                    status.className = "status-badge bg-red-50 text-red-500";
+                }
             } else {
                 signInAnonymously(auth);
             }
         });
 
-        function applySettings() {
-            const clock = document.getElementById('main-clock');
-            clock.style.fontSize = `${config.fontSize || 20}vw`;
-            clock.style.color = config.clockColor || '#ffffff';
-            clock.style.fontFamily = config.fontFamily || 'Inter';
-            
-            document.getElementById('seconds-wrap').classList.toggle('hidden', !config.showSeconds);
-            document.getElementById('led-overlay').classList.toggle('hidden', !config.ledMode);
-            
-            const bgImg = document.getElementById('bg-image');
-            bgImg.style.backgroundImage = config.bgUrl ? `url(${config.bgUrl})` : 'none';
-            bgImg.style.opacity = config.bgOpacity ?? 0.3;
-
-            const vLayer = document.getElementById('video-layer');
-            if (config.ytId) {
-                if (vLayer.getAttribute('data-id') !== config.ytId) {
-                    vLayer.innerHTML = `<iframe class="w-full h-full scale-[1.5]" src="https://www.youtube.com/embed/${config.ytId}?autoplay=1&mute=1&loop=1&playlist=${config.ytId}&controls=0" frameborder="0"></iframe>`;
-                    vLayer.setAttribute('data-id', config.ytId);
+        function fillUI() {
+            Object.keys(currentData).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = currentData[key];
+                    else el.value = currentData[key];
                 }
-                vLayer.style.opacity = config.videoOpacity ?? 0.3;
-            } else {
-                vLayer.innerHTML = "";
-                vLayer.removeAttribute('data-id');
-            }
-
-            const marquee = document.getElementById('marquee-bar');
-            if (config.quranActive) {
-                marquee.classList.remove('hidden');
-                const txt = document.getElementById('marquee-text');
-                txt.innerText = config.runningText || "Mari rapatkan shaf dan luruskan barisan.";
-                txt.style.setProperty('--speed', `${config.runningTextSpeed || 35}s`);
-            } else {
-                marquee.classList.add('hidden');
-            }
-
-            document.getElementById('alarm-overlay').classList.toggle('hidden', !config.alarmActive);
-        }
-
-        function refresh() {
-            const now = moment().locale('id');
-            document.getElementById('main-clock').innerText = now.format('HH:mm');
-            document.getElementById('seconds-wrap').innerText = now.format('ss');
-            document.getElementById('display-date').innerText = now.format('dddd, D MMMM YYYY');
-
-            const coords = new adhan.Coordinates(config.lat || -8.2192, config.lng || 114.3691);
-            const params = adhan.CalculationMethod.Kemenag();
-            const pTimes = new adhan.PrayerTimes(coords, new Date(), params);
-
-            const list = [
-                { id: 'fajr', time: pTimes.fajr, label: 'Subuh' },
-                { id: 'dhuhr', time: pTimes.dhuhr, label: 'Dzuhur' },
-                { id: 'asr', time: pTimes.asr, label: 'Ashar' },
-                { id: 'maghrib', time: pTimes.maghrib, label: 'Maghrib' },
-                { id: 'isha', time: pTimes.isha, label: 'Isya' }
-            ];
-
-            let next = null;
-            list.forEach(p => {
-                const m = moment(p.time);
-                document.getElementById(`time-${p.id}`).innerText = m.format('HH:mm');
-                const box = document.getElementById(`box-${p.id}`);
-                const isActive = now.isSameOrAfter(m) && now.isBefore(m.clone().add(20, 'minutes'));
-                
-                box.className = `prayer-card ${isActive ? 'active-prayer' : ''}`;
-                if (!next && m.isAfter(now)) next = { name: p.label, time: m };
             });
-
-            const countdownEl = document.getElementById('next-prayer-countdown');
-            const labelEl = document.getElementById('label-menuju');
-            
-            if (next) {
-                const dur = moment.duration(next.time.diff(now));
-                labelEl.innerText = `Menuju ${next.name}`;
-                countdownEl.innerText = `${String(dur.hours()).padStart(2,'0')}:${String(dur.minutes()).padStart(2,'0')}:${String(dur.seconds()).padStart(2,'0')}`;
-            } else {
-                labelEl.innerText = "Menuju Subuh";
-                countdownEl.innerText = "--:--:--";
-            }
+            document.getElementById('speed-label').innerText = (currentData.runningTextSpeed || 35) + 's';
+            updateAlarmUI();
         }
 
-        setInterval(refresh, 1000);
-        refresh();
+        window.saveChanges = async () => {
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "MENYIMPAN...";
+            const updates = {};
+            document.querySelectorAll('input, select, textarea').forEach(i => {
+                if(i.id) {
+                    updates[i.id] = i.type === 'checkbox' ? i.checked : 
+                                   (i.type === 'number' || i.id.includes('Opacity')) ? parseFloat(i.value) : i.value;
+                }
+            });
+            try {
+                await updateDoc(docRef, updates);
+                btn.innerText = "BERHASIL!";
+                setTimeout(() => { btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> SIMPAN PERUBAHAN`; lucide.createIcons(); }, 2000);
+            } catch (e) {
+                alert("Gagal Simpan. Cek Firestore Rules.");
+                btn.innerText = "GAGAL";
+            }
+        };
+
+        window.toggleAlarm = async () => {
+            currentData.alarmActive = !currentData.alarmActive;
+            await updateDoc(docRef, { alarmActive: currentData.alarmActive });
+            updateAlarmUI();
+        };
+
+        function updateAlarmUI() {
+            const btn = document.getElementById('alarm-toggle');
+            const txt = document.getElementById('alarm-status-text');
+            btn.className = currentData.alarmActive ? 
+                "w-20 h-20 bg-black text-white rounded-full flex items-center justify-center shadow-xl animate-pulse" : 
+                "w-20 h-20 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl";
+            txt.innerText = currentData.alarmActive ? "ADZAN SEDANG AKTIF" : "Layar Standar Aktif";
+        }
+
+        document.getElementById('runningTextSpeed').oninput = (e) => {
+            document.getElementById('speed-label').innerText = e.target.value + 's';
+        };
+
+        lucide.createIcons();
     </script>
 </body>
 </html>
