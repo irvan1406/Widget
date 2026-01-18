@@ -14,15 +14,35 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;color:#fff;height:100vh;overflow:hidden;font-family:'Plus Jakarta Sans'}
-.lock{pointer-events:none;user-select:none}
+body{
+  background:#000;
+  color:#fff;
+  height:100vh;
+  overflow:hidden;
+  font-family:'Plus Jakarta Sans'
+}
+
 #marquee{white-space:nowrap;overflow:hidden}
 #marquee span{display:inline-block;padding-left:100%}
 @keyframes marquee{to{transform:translateX(-100%)}}
-.blink{animation:blink 1s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-#bgVideo{position:fixed;inset:0;width:100%;height:100%;z-index:-1}
-.night{filter:brightness(.6)}
+
+.alarm{
+  animation:alarmFlash 1s infinite;
+}
+@keyframes alarmFlash{
+  0%{background:#000}
+  50%{background:#400}
+  100%{background:#000}
+}
+
+#bgVideo{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
 </style>
 </head>
 
@@ -44,11 +64,6 @@ body{background:#000;color:#fff;height:100vh;overflow:hidden;font-family:'Plus J
       WAKTUNYA SHOLAT
     </div>
 
-    <div id="iqomahBox" class="hidden">
-      <div class="text-4xl opacity-70">IQOMAH</div>
-      <div id="iqomahTime" class="font-black text-[10vw]"></div>
-    </div>
-
     <div id="nextLabel" class="text-3xl mt-2 opacity-70"></div>
     <div id="countdown" class="text-5xl font-bold"></div>
   </div>
@@ -62,7 +77,7 @@ body{background:#000;color:#fff;height:100vh;overflow:hidden;font-family:'Plus J
   </div>
 
   <div id="marquee" class="text-3xl mt-6">
-    <span id="runningText">Memuat...</span>
+    <span id="runningText"></span>
   </div>
 
 </div>
@@ -71,82 +86,86 @@ body{background:#000;color:#fff;height:100vh;overflow:hidden;font-family:'Plus J
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const app=initializeApp({
+const app = initializeApp({
   apiKey:"AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
   authDomain:"ledd-f6b0f.firebaseapp.com",
   projectId:"ledd-f6b0f"
 });
-const db=getFirestore(app);
-const ref=doc(db,'artifacts','masjid-v1','public','data','config','main');
 
-let conf={}, cacheKey='masjid-cache';
-let sholatUntil=0, iqomahUntil=0, rtIndex=0;
-let alarmUntil=0;
+const db = getFirestore(app);
+const ref = doc(db,'artifacts','masjid-v1','public','data','config','main');
 
-onSnapshot(ref,s=>{
-  if(s.exists()){
-    conf=s.data();
-    localStorage.setItem(cacheKey,JSON.stringify(conf));
+let conf = {};
+let sholatUntil = 0;
+let rtIndex = 0;
+let lastRT = 0;
+let lastBgYoutube = '';
+
+onSnapshot(ref, s=>{
+  if(!s.exists()) return;
+  conf = s.data();
+
+  /* ===== BACKGROUND (AMAN, TIDAK REFRESH) ===== */
+
+  if(conf.bgYoutube){
+    if(lastBgYoutube !== conf.bgYoutube){
+      bgVideo.src =
+        `https://www.youtube.com/embed/${conf.bgYoutube}?autoplay=1&mute=1&loop=1&playlist=${conf.bgYoutube}`;
+      lastBgYoutube = conf.bgYoutube;
+    }
+  }else{
+    if(lastBgYoutube){
+      bgVideo.src = '';
+      lastBgYoutube = '';
+    }
+    document.body.style.background = conf.bgColor || '#000';
+    document.body.style.backgroundImage =
+      conf.bgImage ? `url(${conf.bgImage})` : 'none';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
   }
 });
 
-if(!navigator.onLine){
-  const c=localStorage.getItem(cacheKey);
-  if(c) conf=JSON.parse(c);
-}
-
 function manualTime(hhmm){
-  const [h,m]=hhmm.split(':');
-  return moment().hour(+h).minute(+m).second(0);
+  const [h,m] = hhmm.split(':');
+  let t = moment().hour(+h).minute(+m).second(0);
+  if(t.isBefore(moment())) t.add(1,'day');
+  return t;
 }
 
 setInterval(()=>{
-  const now=moment().locale('id');
+  const now = moment().locale('id');
 
-  clock.innerText=now.format('HH:mm');
-  seconds.innerText=now.format('ss');
-  date.innerText=now.format('dddd, D MMMM YYYY');
+  clock.innerText = now.format('HH:mm');
+  seconds.innerText = now.format('ss');
+  date.innerText = now.format('dddd, D MMMM YYYY');
 
-  document.body.classList.toggle('lock',conf.lockDisplay);
+  main.classList.toggle('alarm', !!conf.alarmActive);
 
-  /* BACKGROUND */
-  if(conf.bgYoutube){
-    bgVideo.src=`https://www.youtube.com/embed/${conf.bgYoutube}?autoplay=1&mute=1&loop=1&playlist=${conf.bgYoutube}`;
-  }else{
-    bgVideo.src='';
-    document.body.style.background=conf.bgColor||'#000';
-    if(conf.bgImage) document.body.style.backgroundImage=`url(${conf.bgImage})`;
-  }
-
-  /* RUNNING TEXT */
+  /* ===== RUNNING TEXT ===== */
   if(conf.runningTexts){
-    const arr=conf.runningTexts.split('|');
-    runningText.innerText=arr[rtIndex%arr.length];
-    runningText.style.animation=`marquee ${conf.runningSpeed||20}s linear infinite`;
-    rtIndex++;
+    const arr = conf.runningTexts.split('|');
+    if(Date.now() - lastRT > (conf.runningSpeed||20)*1000){
+      runningText.innerText = arr[rtIndex % arr.length];
+      runningText.style.animation =
+        `marquee ${conf.runningSpeed||20}s linear infinite`;
+      rtIndex++;
+      lastRT = Date.now();
+    }
   }
 
-  /* ===== ALARM JAM ===== */
-  document.body.classList.toggle('blink', Date.now() < alarmUntil);
+  if(!conf.lat || !conf.lng) return;
 
-  if(conf.alarmActive && conf.alarmTimes){
-    const alarms=conf.alarmTimes.split('|').map(v=>v.trim());
-    alarms.forEach(t=>{
-      if(now.format('HH:mm')===t){
-        alarmUntil=Date.now()+60000; // 1 menit
-      }
-    });
-  }
+  const coords = new adhan.Coordinates(+conf.lat,+conf.lng);
+  const auto = new adhan.PrayerTimes(
+    coords,
+    new Date(),
+    adhan.CalculationMethod.Singapore()
+  );
 
-  if(!conf.lat||!conf.lng) return;
+  const m = conf.prayerManual || {};
 
-  const coords=new adhan.Coordinates(+conf.lat,+conf.lng);
-  const auto=new adhan.PrayerTimes(coords,new Date(),adhan.CalculationMethod.Singapore());
-  const m=conf.prayerManual||{};
-  const iq=conf.iqomah||{};
-  const sd=conf.sholatDuration||{};
-
-  const prayers=[
+  const prayers = [
     {n:'SUBUH',id:'fajr',t:m.fajr?manualTime(m.fajr):moment(auto.fajr)},
     {n:'DZUHUR',id:'dhuhr',t:m.dhuhr?manualTime(m.dhuhr):moment(auto.dhuhr)},
     {n:'ASHAR',id:'asr',t:m.asr?manualTime(m.asr):moment(auto.asr)},
@@ -155,45 +174,33 @@ setInterval(()=>{
   ];
 
   prayers.forEach(p=>{
-    document.getElementById('t-'+p.id).innerText=p.t.format('HH:mm');
+    document.getElementById('t-'+p.id).innerText = p.t.format('HH:mm');
     if(now.isSame(p.t,'minute')){
-      sholatUntil=Date.now()+((sd[p.id]||5)*60000);
-      iqomahUntil=sholatUntil+((iq[p.id]||5)*60000);
+      sholatUntil = Date.now() + ((conf.sholatDuration||5)*60000);
     }
   });
 
-  if(Date.now()<sholatUntil){
+  if(Date.now() < sholatUntil){
     clockWrap.classList.add('hidden');
     sholatText.classList.remove('hidden');
-    iqomahBox.classList.add('hidden');
+    nextLabel.innerText = '';
+    countdown.innerText = '';
     return;
-  }
-
-  if(Date.now()<iqomahUntil){
-    clockWrap.classList.add('hidden');
+  }else{
+    clockWrap.classList.remove('hidden');
     sholatText.classList.add('hidden');
-    iqomahBox.classList.remove('hidden');
-    const d=Math.max(0,Math.floor((iqomahUntil-Date.now())/1000));
-    iqomahTime.innerText=
-      `${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`;
-    return;
   }
 
-  clockWrap.classList.remove('hidden');
-  sholatText.classList.add('hidden');
-  iqomahBox.classList.add('hidden');
+  let next = prayers.find(p=>p.t.isAfter(now));
+  if(!next) next = {...prayers[0], t: prayers[0].t.clone().add(1,'day')};
 
-  let next=prayers.find(p=>p.t.isAfter(now));
-  if(!next) next={...prayers[0],t:prayers[0].t.clone().add(1,'day')};
-
-  const d=moment.duration(next.t.diff(now));
-  nextLabel.innerText='MENUJU '+next.n;
-  countdown.innerText=
+  const d = moment.duration(next.t.diff(now));
+  nextLabel.innerText = 'MENUJU ' + next.n;
+  countdown.innerText =
     `${String(d.hours()).padStart(2,'0')}:`+
     `${String(d.minutes()).padStart(2,'0')}:`+
     `${String(d.seconds()).padStart(2,'0')}`;
 
-  document.body.classList.toggle('night',conf.nightMode && next.id==='fajr');
 },1000);
 </script>
 
