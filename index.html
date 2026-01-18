@@ -3,189 +3,199 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Display Proyektor Masjid</title>
+<title>Jam Digital Masjid</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/m-m-m/Adhan.js@master/dist/Adhan.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/adhan@4.4.3/dist/Adhan.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=JetBrains+Mono:wght@700&display=swap');
-
-body {
-  background:#000;
-  color:#fff;
-  font-family:'Plus Jakarta Sans',sans-serif;
-  overflow:hidden;
-}
-
-#bg-img {
-  position:fixed;
-  inset:0;
-  background-size:cover;
-  background-position:center;
-  z-index:-2;
-}
-
-#v-layer {
-  position:fixed;
-  inset:0;
-  z-index:-1;
-}
-
-#overlay {
-  position:fixed;
-  inset:0;
-  background:#000;
-  z-index:-1;
-}
-
-.sholat-card {
-  background:rgba(255,255,255,.08);
-  backdrop-filter:blur(10px);
-  border-radius:1.5rem;
-  padding:1.5rem;
-  border:1px solid rgba(255,255,255,.1);
-  text-align:center;
-}
-
-#alarm {
-  position:fixed;
-  inset:0;
-  z-index:100;
-  background:black;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-}
-
-#running {
-  white-space:nowrap;
-  display:inline-block;
-}
-
-@keyframes marquee {
-  from { transform:translateX(100vw); }
-  to { transform:translateX(-100%); }
-}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;height:100vh;overflow:hidden;font-family:'Plus Jakarta Sans'}
+.lock{pointer-events:none;user-select:none}
+#marquee{white-space:nowrap;overflow:hidden}
+#marquee span{display:inline-block;padding-left:100%}
+@keyframes marquee{to{transform:translateX(-100%)}}
+.blink{animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#bgVideo{position:fixed;inset:0;width:100%;height:100%;z-index:-1}
+.night{filter:brightness(.6)}
 </style>
 </head>
 
-<body class="flex flex-col items-center justify-center relative">
+<body>
 
-<div id="bg-img"></div>
-<div id="v-layer"></div>
-<div id="overlay"></div>
+<iframe id="bgVideo" allow="autoplay"></iframe>
 
-<div id="alarm">
-  <h1 class="text-[15vw] font-black animate-pulse">ADZAN</h1>
-  <p class="text-4xl font-bold tracking-widest mt-4">WAKTUNYA SHOLAT</p>
-</div>
+<div id="main" class="h-screen flex flex-col justify-between px-12 py-8 bg-black/70">
 
-<div class="z-10 w-full max-w-6xl px-4 flex flex-col items-center text-center">
-  <p id="date" class="text-4xl font-bold uppercase tracking-[0.3em] mb-4 text-blue-400"></p>
+  <div class="text-center">
+    <div id="date" class="text-4xl mb-2 text-blue-400"></div>
 
-  <div class="bg-white/10 px-10 py-3 rounded-full mb-6 border border-white/20">
-    <p id="label-next" class="text-xl font-black tracking-widest opacity-60">MENUJU ---</p>
-    <p id="countdown" class="text-4xl font-black tabular-nums">00:00:00</p>
+    <div id="clockWrap">
+      <span id="clock" class="font-black text-[18vw]">00:00</span>
+      <span id="seconds" class="text-[6vw] ml-4 text-blue-500">00</span>
+    </div>
+
+    <div id="sholatText" class="hidden font-black text-[8vw] text-green-400">
+      WAKTUNYA SHOLAT
+    </div>
+
+    <div id="iqomahBox" class="hidden">
+      <div class="text-4xl opacity-70">IQOMAH</div>
+      <div id="iqomahTime" class="font-black text-[10vw]"></div>
+    </div>
+
+    <div id="nextLabel" class="text-3xl mt-2 opacity-70"></div>
+    <div id="countdown" class="text-5xl font-bold"></div>
   </div>
 
-  <div class="mb-10 flex items-baseline justify-center">
-    <span id="clock" class="text-[18vw] font-black tabular-nums">00:00</span>
-    <span id="seconds" class="text-[6vw] font-bold text-blue-500 ml-6 tabular-nums">00</span>
+  <div class="grid grid-cols-5 gap-6 text-center mt-6">
+    <div><div>SUBUH</div><div id="t-fajr" class="text-5xl"></div></div>
+    <div><div>DZUHUR</div><div id="t-dhuhr" class="text-5xl"></div></div>
+    <div><div>ASHAR</div><div id="t-asr" class="text-5xl"></div></div>
+    <div><div>MAGHRIB</div><div id="t-maghrib" class="text-5xl"></div></div>
+    <div><div>ISYA</div><div id="t-isha" class="text-5xl"></div></div>
   </div>
 
-  <div class="grid grid-cols-5 gap-6 w-full">
-    <div class="sholat-card"><p class="opacity-60">Subuh</p><p id="t-fajr" class="text-5xl font-black">--:--</p></div>
-    <div class="sholat-card"><p class="opacity-60">Dzuhur</p><p id="t-dhuhr" class="text-5xl font-black">--:--</p></div>
-    <div class="sholat-card"><p class="opacity-60">Ashar</p><p id="t-asr" class="text-5xl font-black">--:--</p></div>
-    <div class="sholat-card"><p class="opacity-60">Maghrib</p><p id="t-maghrib" class="text-5xl font-black">--:--</p></div>
-    <div class="sholat-card"><p class="opacity-60">Isya</p><p id="t-isha" class="text-5xl font-black">--:--</p></div>
+  <div id="marquee" class="text-3xl mt-6">
+    <span id="runningText">Memuat...</span>
   </div>
-</div>
 
-<div class="fixed bottom-0 left-0 right-0 py-6 bg-black/60 overflow-hidden">
-  <div id="running" class="text-3xl font-bold"></div>
 </div>
-
-<audio id="audio" loop></audio>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const app = initializeApp({
+const app=initializeApp({
   apiKey:"AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
   authDomain:"ledd-f6b0f.firebaseapp.com",
-  projectId:"ledd-f6b0f",
-  storageBucket:"ledd-f6b0f.firebasestorage.app",
-  messagingSenderId:"341802454320",
-  appId:"1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
+  projectId:"ledd-f6b0f"
+});
+const db=getFirestore(app);
+const ref=doc(db,'artifacts','masjid-v1','public','data','config','main');
+
+let conf={}, cacheKey='masjid-cache';
+let sholatUntil=0, iqomahUntil=0, rtIndex=0;
+let alarmUntil=0;
+
+onSnapshot(ref,s=>{
+  if(s.exists()){
+    conf=s.data();
+    localStorage.setItem(cacheKey,JSON.stringify(conf));
+  }
 });
 
-const db = getFirestore(app);
-let conf = {};
+if(!navigator.onLine){
+  const c=localStorage.getItem(cacheKey);
+  if(c) conf=JSON.parse(c);
+}
 
-onSnapshot(
-  doc(db,'artifacts','masjid-v1','public','data','config','main'),
-  snap => {
-    if(!snap.exists()) return;
-    conf = snap.data();
-    applyConfig();
-  }
-);
-
-function applyConfig(){
-  document.getElementById('clock').style.fontSize = (conf.fontSize||18)+'vw';
-  document.getElementById('clock').style.fontFamily = conf.fontFamily||'Plus Jakarta Sans';
-  document.getElementById('clock').style.color = conf.color||'#fff';
-
-  document.getElementById('running').innerText = conf.runningText||'';
-  document.getElementById('running').style.animation =
-    `marquee ${110-(conf.runningTextSpeed||30)}s linear infinite`;
-  document.getElementById('running').style.color = conf.color||'#fff';
-
-  document.getElementById('bg-img').style.backgroundImage =
-    conf.bgUrl ? `url(${conf.bgUrl})` : 'none';
-  document.getElementById('bg-img').style.opacity = conf.opacity||0.5;
-
-  const alarm = document.getElementById('alarm');
-  const audio = document.getElementById('audio');
-
-  if(conf.alarmActive){
-    alarm.style.display='flex';
-    if(conf.audioUrl && !conf.mute){
-      audio.src = conf.audioUrl;
-      audio.play().catch(()=>{});
-    }
-  } else {
-    alarm.style.display='none';
-    audio.pause();
-  }
+function manualTime(hhmm){
+  const [h,m]=hhmm.split(':');
+  return moment().hour(+h).minute(+m).second(0);
 }
 
 setInterval(()=>{
-  const now = moment().locale('id');
-  document.getElementById('clock').innerText = now.format('HH:mm');
-  document.getElementById('seconds').innerText = now.format('ss');
-  document.getElementById('date').innerText = now.format('dddd, D MMMM YYYY');
+  const now=moment().locale('id');
 
-  if(!conf.lat || !conf.lng) return;
-  const coords = new adhan.Coordinates(+conf.lat,+conf.lng);
-  const times = new adhan.PrayerTimes(coords,new Date(),adhan.CalculationMethod.Singapore());
+  clock.innerText=now.format('HH:mm');
+  seconds.innerText=now.format('ss');
+  date.innerText=now.format('dddd, D MMMM YYYY');
 
-  const map = {
-    fajr:times.fajr,dhuhr:times.dhuhr,asr:times.asr,
-    maghrib:times.maghrib,isha:times.isha
-  };
+  document.body.classList.toggle('lock',conf.lockDisplay);
 
-  Object.keys(map).forEach(k=>{
-    document.getElementById('t-'+k).innerText = moment(map[k]).format('HH:mm');
+  /* BACKGROUND */
+  if(conf.bgYoutube){
+    bgVideo.src=`https://www.youtube.com/embed/${conf.bgYoutube}?autoplay=1&mute=1&loop=1&playlist=${conf.bgYoutube}`;
+  }else{
+    bgVideo.src='';
+    document.body.style.background=conf.bgColor||'#000';
+    if(conf.bgImage) document.body.style.backgroundImage=`url(${conf.bgImage})`;
+  }
+
+  /* RUNNING TEXT */
+  if(conf.runningTexts){
+    const arr=conf.runningTexts.split('|');
+    runningText.innerText=arr[rtIndex%arr.length];
+    runningText.style.animation=`marquee ${conf.runningSpeed||20}s linear infinite`;
+    rtIndex++;
+  }
+
+  /* ===== ALARM JAM ===== */
+  document.body.classList.toggle('blink', Date.now() < alarmUntil);
+
+  if(conf.alarmActive && conf.alarmTimes){
+    const alarms=conf.alarmTimes.split('|').map(v=>v.trim());
+    alarms.forEach(t=>{
+      if(now.format('HH:mm')===t){
+        alarmUntil=Date.now()+60000; // 1 menit
+      }
+    });
+  }
+
+  if(!conf.lat||!conf.lng) return;
+
+  const coords=new adhan.Coordinates(+conf.lat,+conf.lng);
+  const auto=new adhan.PrayerTimes(coords,new Date(),adhan.CalculationMethod.Singapore());
+  const m=conf.prayerManual||{};
+  const iq=conf.iqomah||{};
+  const sd=conf.sholatDuration||{};
+
+  const prayers=[
+    {n:'SUBUH',id:'fajr',t:m.fajr?manualTime(m.fajr):moment(auto.fajr)},
+    {n:'DZUHUR',id:'dhuhr',t:m.dhuhr?manualTime(m.dhuhr):moment(auto.dhuhr)},
+    {n:'ASHAR',id:'asr',t:m.asr?manualTime(m.asr):moment(auto.asr)},
+    {n:'MAGHRIB',id:'maghrib',t:m.maghrib?manualTime(m.maghrib):moment(auto.maghrib)},
+    {n:'ISYA',id:'isha',t:m.isha?manualTime(m.isha):moment(auto.isha)}
+  ];
+
+  prayers.forEach(p=>{
+    document.getElementById('t-'+p.id).innerText=p.t.format('HH:mm');
+    if(now.isSame(p.t,'minute')){
+      sholatUntil=Date.now()+((sd[p.id]||5)*60000);
+      iqomahUntil=sholatUntil+((iq[p.id]||5)*60000);
+    }
   });
+
+  if(Date.now()<sholatUntil){
+    clockWrap.classList.add('hidden');
+    sholatText.classList.remove('hidden');
+    iqomahBox.classList.add('hidden');
+    return;
+  }
+
+  if(Date.now()<iqomahUntil){
+    clockWrap.classList.add('hidden');
+    sholatText.classList.add('hidden');
+    iqomahBox.classList.remove('hidden');
+    const d=Math.max(0,Math.floor((iqomahUntil-Date.now())/1000));
+    iqomahTime.innerText=
+      `${String(Math.floor(d/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`;
+    return;
+  }
+
+  clockWrap.classList.remove('hidden');
+  sholatText.classList.add('hidden');
+  iqomahBox.classList.add('hidden');
+
+  let next=prayers.find(p=>p.t.isAfter(now));
+  if(!next) next={...prayers[0],t:prayers[0].t.clone().add(1,'day')};
+
+  const d=moment.duration(next.t.diff(now));
+  nextLabel.innerText='MENUJU '+next.n;
+  countdown.innerText=
+    `${String(d.hours()).padStart(2,'0')}:`+
+    `${String(d.minutes()).padStart(2,'0')}:`+
+    `${String(d.seconds()).padStart(2,'0')}`;
+
+  document.body.classList.toggle('night',conf.nightMode && next.id==='fajr');
 },1000);
 </script>
 
 </body>
-                                                                          </html>
+</html>
