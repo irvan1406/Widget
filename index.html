@@ -3,116 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Masjid - Stable</title>
+    <title>Display Masjid - Layout Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Load Library di Head (Penting) -->
+    <!-- Library Wajib -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/adhan/3.0.0/Adhan.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;600;800&display=swap');
+        
         body { background-color: #000; color: #fff; overflow: hidden; font-family: 'Inter', sans-serif; }
         .font-digital { font-family: 'Orbitron', monospace; }
         
-        /* Layering */
+        /* Layer System */
         .layer-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; transition: opacity 1s; }
-        .layer-overlay { position: absolute; inset: 0; z-index: 10; background: rgba(0,0,0,0.6); }
-        .layer-content { position: relative; z-index: 20; height: 100vh; display: flex; flex-direction: column; padding: 2rem; }
+        .layer-overlay { position: absolute; inset: 0; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.4), rgba(0,0,0,0.9)); }
+        .layer-content { position: relative; z-index: 20; height: 100vh; display: flex; flex-direction: column; padding: 2.5rem; }
         
+        /* Layout Grid */
+        .header-grid { display: flex; justify-content: space-between; align-items: flex-start; height: 150px; }
+        .center-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        
+        /* Glow Effects */
+        .glow-text { text-shadow: 0 0 40px rgba(255, 255, 255, 0.2); }
+        .glow-red { text-shadow: 0 0 50px rgba(220, 38, 38, 0.8); }
+
         /* Running Text */
-        .marquee-container { overflow: hidden; white-space: nowrap; position: relative; }
-        .marquee-text { display: inline-block; animation: marquee var(--speed, 15s) linear infinite; padding-left: 100%; }
+        .marquee-container { overflow: hidden; white-space: nowrap; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee var(--speed, 20s) linear infinite; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
     </style>
 </head>
 <body>
 
-    <!-- Backgrounds -->
-    <div id="bg-color" class="layer-bg" style="background-color: #0f172a;"></div>
+    <!-- 1. Background Layers -->
+    <div id="bg-color" class="layer-bg" style="background-color: #020617;"></div>
     <div id="bg-image" class="layer-bg" style="opacity: 0;"></div>
     <div id="bg-youtube" class="layer-bg" style="opacity: 0; pointer-events: none;">
-        <div id="player"></div>
+        <div id="player" class="w-full h-[140%] -mt-[10%] opacity-60"></div>
     </div>
     
     <div class="layer-overlay"></div>
 
-    <!-- Main Content -->
+    <!-- 2. Content -->
     <div class="layer-content">
         
-        <!-- Header: Tanggal & Jam -->
-        <div class="flex justify-between items-start">
+        <!-- HEADER: Kiri (Tanggal), Kanan (Countdown) -->
+        <div class="header-grid">
+            <!-- Kiri: Tanggal -->
             <div>
-                <h1 id="date-el" class="text-4xl font-bold uppercase text-gray-100">Memuat Tanggal...</h1>
-                <p id="hijri-el" class="text-2xl text-yellow-400 mt-1">...</p>
+                <h2 id="date-el" class="text-3xl font-bold uppercase tracking-wide text-gray-200">Memuat Tanggal...</h2>
+                <p id="hijri-el" class="text-xl text-yellow-500 font-medium mt-1">...</p>
             </div>
-            <div id="clock-el" class="text-9xl font-bold font-digital leading-none text-white drop-shadow-lg">
-                00:00:00
+
+            <!-- Kanan: Info Menuju Waktu -->
+            <div id="info-panel" class="text-right">
+                <div class="text-gray-400 font-bold uppercase tracking-widest text-sm mb-1">Menuju Waktu</div>
+                <div id="next-prayer-name" class="text-3xl font-black text-white uppercase">...</div>
+                <div id="countdown-el" class="text-5xl font-digital text-yellow-400 mt-[-5px]">--:--:--</div>
             </div>
         </div>
 
-        <!-- Center: Status -->
-        <div class="flex-1 flex flex-col justify-center items-center text-center">
+        <!-- CENTER: Jam Besar / Overlay Sholat -->
+        <div class="center-stage">
             
-            <!-- Normal Mode -->
-            <div id="mode-standby">
-                <h2 id="next-prayer-label" class="text-4xl text-gray-300 uppercase tracking-widest mb-2">Menuju Waktu</h2>
-                <div id="countdown-el" class="text-8xl font-bold font-digital text-yellow-500">00:00:00</div>
+            <!-- JAM UTAMA (Default) -->
+            <div id="main-clock-container" class="text-center transition-all duration-500">
+                <div id="clock-el" class="text-[14rem] font-bold font-digital leading-none tracking-tighter glow-text select-none">
+                    00:00:00
+                </div>
             </div>
 
-            <!-- Sholat Mode -->
-            <div id="mode-sholat" class="hidden animate-pulse">
-                <div class="bg-red-600 border-4 border-white px-10 py-8 rounded-3xl shadow-[0_0_50px_rgba(255,0,0,0.5)]">
-                    <h2 class="text-8xl font-black uppercase italic">WAKTUNYA SHOLAT</h2>
-                    <p id="sholat-name" class="text-5xl mt-4 font-bold text-yellow-300 uppercase">SUBUH</p>
+            <!-- OVERLAY WAKTUNYA SHOLAT (Hidden by default) -->
+            <div id="sholat-overlay" class="hidden absolute inset-0 flex items-center justify-center backdrop-blur-md bg-black/60 z-50 rounded-3xl animate-pulse">
+                <div class="text-center">
+                    <h1 class="text-[8rem] font-black italic text-red-500 leading-none glow-red uppercase">WAKTUNYA<br>SHOLAT</h1>
+                    <p id="sholat-name-active" class="text-6xl text-white font-bold mt-4 uppercase tracking-[1rem]"></p>
                 </div>
             </div>
 
         </div>
 
-        <!-- Footer: Jadwal -->
-        <div class="grid grid-cols-5 gap-4 mt-auto mb-4">
-            <!-- Item Jadwal -->
-            <div class="bg-black/50 p-4 rounded-xl border-t-4 border-blue-500 text-center backdrop-blur-sm">
-                <span class="block text-gray-400 font-bold uppercase text-lg">Subuh</span>
-                <span id="time-fajr" class="block text-4xl font-digital mt-1">00:00</span>
+        <!-- FOOTER: Jadwal 5 Waktu -->
+        <div class="grid grid-cols-5 gap-6 mt-auto mb-6">
+            <div class="bg-white/5 border-t-4 border-blue-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
+                <div class="text-gray-400 text-sm font-bold uppercase">Subuh</div>
+                <div id="time-fajr" class="text-4xl font-digital text-white mt-1">--:--</div>
             </div>
-            <div class="bg-black/50 p-4 rounded-xl border-t-4 border-yellow-500 text-center backdrop-blur-sm">
-                <span class="block text-gray-400 font-bold uppercase text-lg">Dzuhur</span>
-                <span id="time-dhuhr" class="block text-4xl font-digital mt-1">00:00</span>
+            <div class="bg-white/5 border-t-4 border-yellow-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
+                <div class="text-gray-400 text-sm font-bold uppercase">Dzuhur</div>
+                <div id="time-dhuhr" class="text-4xl font-digital text-white mt-1">--:--</div>
             </div>
-            <div class="bg-black/50 p-4 rounded-xl border-t-4 border-green-500 text-center backdrop-blur-sm">
-                <span class="block text-gray-400 font-bold uppercase text-lg">Ashar</span>
-                <span id="time-asr" class="block text-4xl font-digital mt-1">00:00</span>
+            <div class="bg-white/5 border-t-4 border-green-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
+                <div class="text-gray-400 text-sm font-bold uppercase">Ashar</div>
+                <div id="time-asr" class="text-4xl font-digital text-white mt-1">--:--</div>
             </div>
-            <div class="bg-black/50 p-4 rounded-xl border-t-4 border-orange-500 text-center backdrop-blur-sm">
-                <span class="block text-gray-400 font-bold uppercase text-lg">Maghrib</span>
-                <span id="time-maghrib" class="block text-4xl font-digital mt-1">00:00</span>
+            <div class="bg-white/5 border-t-4 border-orange-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
+                <div class="text-gray-400 text-sm font-bold uppercase">Maghrib</div>
+                <div id="time-maghrib" class="text-4xl font-digital text-white mt-1">--:--</div>
             </div>
-            <div class="bg-black/50 p-4 rounded-xl border-t-4 border-purple-500 text-center backdrop-blur-sm">
-                <span class="block text-gray-400 font-bold uppercase text-lg">Isya</span>
-                <span id="time-isha" class="block text-4xl font-digital mt-1">00:00</span>
+            <div class="bg-white/5 border-t-4 border-indigo-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
+                <div class="text-gray-400 text-sm font-bold uppercase">Isya</div>
+                <div id="time-isha" class="text-4xl font-digital text-white mt-1">--:--</div>
             </div>
         </div>
 
-        <!-- Running Text -->
-        <div class="bg-blue-900/80 p-3 -mx-8 -mb-8 border-t border-white/20">
+        <!-- RUNNING TEXT -->
+        <div class="bg-blue-900/90 py-3 -mx-10 -mb-10 border-t border-white/10">
             <div class="marquee-container">
-                <div id="running-text" class="marquee-text text-3xl font-bold">
-                    Selamat Datang di Masjid Kami...
+                <div id="running-text" class="marquee-text text-2xl font-semibold">
+                    Selamat Datang di Masjid...
                 </div>
             </div>
         </div>
+
     </div>
 
-    <!-- LOGIC SCRIPT -->
+    <!-- 3. LOGIC SCRIPT (Robust & Safe) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // CONFIG
+        // CONFIG DASAR (Fallback jika Firebase gagal)
         const firebaseConfig = {
             apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
             authDomain: "ledd-f6b0f.firebaseapp.com",
@@ -122,122 +137,131 @@
             appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
         };
 
-        // GLOBAL STATE
-        let appData = {
-            bgColor: '#0f172a',
+        // State Global
+        let localData = {
+            bgColor: '#020617',
             bgImage: '',
             bgYoutube: '',
-            runningTexts: 'Selamat Datang',
+            runningTexts: 'Selamat Datang di Masjid Kami',
             runningSpeed: 10,
-            prayerManual: {},
-            sholatDuration: {}
+            prayerManual: {}
         };
-        let currentYT = '';
-        let player;
+        let ytPlayer;
+        let currentYT = "";
 
-        // --- 1. JAM & JADWAL SHOLAT ENGINE (INDEPENDEN) ---
-        function runClockEngine() {
-            try {
-                const now = new Date();
-                
-                // Update Jam UI
-                const h = String(now.getHours()).padStart(2,'0');
-                const m = String(now.getMinutes()).padStart(2,'0');
-                const s = String(now.getSeconds()).padStart(2,'0');
-                document.getElementById('clock-el').innerText = `${h}:${m}:${s}`;
-
-                // Update Tanggal UI
-                if(window.moment) {
-                    moment.locale('id');
-                    const mNow = moment(now);
-                    document.getElementById('date-el').innerText = mNow.format('dddd, D MMMM YYYY');
-                    
-                    // Hijriah
-                    const hijri = new Intl.DateTimeFormat('id-TN-u-ca-islamic-uma-nu-latn', {day:'numeric', month:'long', year:'numeric'}).format(now);
-                    document.getElementById('hijri-el').innerText = hijri + " H";
-                    
-                    // Hitung Jadwal Sholat
-                    calculatePrayerTimes(mNow);
-                }
-
-            } catch (err) {
-                console.error("Clock Error:", err);
-            }
-            requestAnimationFrame(runClockEngine);
+        // --- A. ENGINE JAM & JADWAL (Jalan Duluan) ---
+        function startEngine() {
+            updateClock();
+            setInterval(updateClock, 1000); // Detik jam
         }
 
-        function calculatePrayerTimes(momentNow) {
-            // Koordinat Jakarta (Bisa diubah)
+        function updateClock() {
+            const now = new Date();
+            
+            // 1. Render Jam Tengah Realtime
+            const h = String(now.getHours()).padStart(2,'0');
+            const m = String(now.getMinutes()).padStart(2,'0');
+            const s = String(now.getSeconds()).padStart(2,'0');
+            document.getElementById('clock-el').innerText = `${h}:${m}:${s}`;
+
+            // 2. Render Tanggal (Cek Library Moment)
+            if (window.moment) {
+                moment.locale('id');
+                const mNow = moment(now);
+                document.getElementById('date-el').innerText = mNow.format('dddd, D MMMM YYYY');
+                
+                // Hijriah
+                const hijri = new Intl.DateTimeFormat('id-TN-u-ca-islamic-uma-nu-latn', {day:'numeric', month:'long', year:'numeric'}).format(now);
+                document.getElementById('hijri-el').innerText = hijri + " H";
+
+                // 3. Hitung Logic Sholat
+                calculatePrayerLogic(mNow);
+            }
+        }
+
+        function calculatePrayerLogic(mNow) {
+            // Koordinat Jakarta (Default)
             const coords = new adhan.Coordinates(-6.2088, 106.8456);
             const params = adhan.CalculationMethod.Singapore();
             const prayerTimes = new adhan.PrayerTimes(coords, new Date(), params);
             
             const pList = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-            let nextPrayer = null;
-            let minDiff = 999999;
-            let activePrayer = null;
+            let nextP = null;
+            let minDiff = Infinity;
+            let isSholatTime = false;
+            let activeName = "";
 
             pList.forEach(key => {
+                // Ambil jam (Otomatis vs Manual)
                 let timeStr = moment(prayerTimes[key]).format('HH:mm');
-                
-                // Override Manual dari Firebase
-                if(appData.prayerManual && appData.prayerManual[key]) {
-                    timeStr = appData.prayerManual[key];
+                if (localData.prayerManual && localData.prayerManual[key]) {
+                    timeStr = localData.prayerManual[key];
                 }
 
-                // Render ke Grid
+                // Render ke Footer
                 const el = document.getElementById(`time-${key}`);
                 if(el) el.innerText = timeStr;
 
-                // Logic Countdown
+                // Hitung Logic
                 const pTime = moment(timeStr, 'HH:mm');
-                const diff = pTime.diff(momentNow, 'seconds');
+                const diff = pTime.diff(mNow, 'seconds');
 
-                // Cek sedang sholat?
-                const duration = (appData.sholatDuration && appData.sholatDuration[key]) ? appData.sholatDuration[key] : 10; // Default 10 menit
+                // Logic "WAKTUNYA SHOLAT" (5 Menit Fix)
+                const endTime = pTime.clone().add(5, 'minutes'); // FIX 5 MENIT
                 
-                // Jika waktu sekarang >= waktu sholat DAN waktu sekarang < waktu sholat + durasi
-                if(momentNow.isSameOrAfter(pTime) && momentNow.isBefore(pTime.clone().add(duration, 'minutes'))) {
-                    activePrayer = key;
+                // Jika SEKARANG ada di antara WAKTU SHOLAT dan WAKTU SHOLAT + 5 MENIT
+                if (mNow.isSameOrAfter(pTime) && mNow.isBefore(endTime)) {
+                    isSholatTime = true;
+                    activeName = key;
                 }
 
-                if(diff > 0 && diff < minDiff) {
+                // Cari Next Prayer
+                if (diff > 0 && diff < minDiff) {
                     minDiff = diff;
-                    nextPrayer = key;
+                    nextP = key;
                 }
             });
 
-            updateStatusUI(activePrayer, nextPrayer, minDiff);
+            updateUIState(isSholatTime, activeName, nextP, minDiff);
         }
 
-        function updateStatusUI(active, next, diffSeconds) {
-            const modeStandby = document.getElementById('mode-standby');
-            const modeSholat = document.getElementById('mode-sholat');
-            
-            if (active) {
-                modeStandby.classList.add('hidden');
-                modeSholat.classList.remove('hidden');
-                
-                let label = active;
-                if(active === 'fajr') label = 'Subuh';
-                if(active === 'dhuhr') label = 'Dzuhur';
-                if(active === 'asr') label = 'Ashar';
-                if(active === 'maghrib') label = 'Maghrib';
-                if(active === 'isha') label = 'Isya';
-                
-                document.getElementById('sholat-name').innerText = label;
-            } else {
-                modeSholat.classList.add('hidden');
-                modeStandby.classList.remove('hidden');
+        function updateUIState(isSholat, sholatName, nextKey, diffSeconds) {
+            const overlay = document.getElementById('sholat-overlay');
+            const mainClock = document.getElementById('main-clock-container');
+            const infoPanel = document.getElementById('info-panel');
 
-                if (next) {
-                    let label = next;
-                    if(next === 'fajr') label = 'Subuh';
-                    if(next === 'dhuhr') label = 'Dzuhur';
-                    if(next === 'asr') label = 'Ashar';
-                    if(next === 'maghrib') label = 'Maghrib';
-                    if(next === 'isha') label = 'Isya';
-                    document.getElementById('next-prayer-label').innerText = `Menuju ${label}`;
+            if (isSholat) {
+                // TAMPILKAN OVERLAY MERAH
+                overlay.classList.remove('hidden');
+                mainClock.classList.add('blur-sm'); // Blur jam belakang
+                
+                let label = sholatName;
+                if(label === 'fajr') label = 'Subuh';
+                if(label === 'dhuhr') label = 'Dzuhur';
+                if(label === 'asr') label = 'Ashar';
+                if(label === 'maghrib') label = 'Maghrib';
+                if(label === 'isha') label = 'Isya';
+                document.getElementById('sholat-name-active').innerText = label;
+
+                // Sembunyikan info next
+                infoPanel.style.opacity = '0';
+
+            } else {
+                // KEMBALI NORMAL
+                overlay.classList.add('hidden');
+                mainClock.classList.remove('blur-sm');
+                infoPanel.style.opacity = '1';
+
+                // Update Countdown Pojok Kanan Atas
+                if (nextKey) {
+                    let label = nextKey;
+                    if(label === 'fajr') label = 'Subuh';
+                    if(label === 'dhuhr') label = 'Dzuhur';
+                    if(label === 'asr') label = 'Ashar';
+                    if(label === 'maghrib') label = 'Maghrib';
+                    if(label === 'isha') label = 'Isya';
+                    
+                    document.getElementById('next-prayer-name').innerText = label;
 
                     const dur = moment.duration(diffSeconds, 'seconds');
                     const hh = String(Math.floor(dur.asHours())).padStart(2, '0');
@@ -248,90 +272,79 @@
             }
         }
 
-        // --- 2. FIREBASE SYNC ENGINE ---
-        async function initFirebase() {
+        // --- B. FIREBASE SYNC (Jalan Belakangan & Aman Error) ---
+        async function startFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
                 const db = getFirestore(app);
                 const auth = getAuth(app);
-
+                
                 await signInAnonymously(auth);
-                console.log("Firebase Connected");
+                console.log("Firebase Connected!");
 
-                // Path sesuai Prompt: artifacts/masjid-v1/public/data/config/main
-                // Collection: config, Doc: main
                 const docRef = doc(db, 'artifacts', 'masjid-v1', 'public', 'data', 'config', 'main');
-
+                
                 onSnapshot(docRef, (snap) => {
                     if (snap.exists()) {
-                        appData = { ...appData, ...snap.data() };
+                        const serverData = snap.data();
+                        localData = { ...localData, ...serverData };
                         renderVisuals();
-                    } else {
-                        console.log("Belum ada data config, pakai default.");
                     }
-                }, (error) => {
-                    console.error("Snapshot Error:", error);
                 });
 
             } catch (err) {
-                console.error("Firebase Init Failed:", err);
-                // Jam tetap jalan meski firebase gagal
+                console.error("Firebase Gagal (Mode Offline):", err);
+                // Tidak perlu alert, jam tetap jalan karena startEngine() terpisah
             }
         }
 
         function renderVisuals() {
-            // Background
-            if(appData.bgColor) document.getElementById('bg-color').style.backgroundColor = appData.bgColor;
+            // Update Background
+            if(localData.bgColor) document.getElementById('bg-color').style.backgroundColor = localData.bgColor;
             
             const bgImg = document.getElementById('bg-image');
-            if(appData.bgImage) {
-                bgImg.style.backgroundImage = `url('${appData.bgImage}')`;
+            if(localData.bgImage) {
+                bgImg.style.backgroundImage = `url('${localData.bgImage}')`;
                 bgImg.style.opacity = '1';
             } else {
                 bgImg.style.opacity = '0';
             }
 
-            // YouTube
-            const ytContainer = document.getElementById('bg-youtube');
-            if(appData.bgYoutube && appData.bgYoutube !== currentYT) {
-                currentYT = appData.bgYoutube;
-                if(player && player.loadVideoById) {
-                    player.loadVideoById(currentYT);
-                    ytContainer.style.opacity = '1';
+            // Update YouTube
+            const ytEl = document.getElementById('bg-youtube');
+            if (localData.bgYoutube && localData.bgYoutube !== currentYT) {
+                currentYT = localData.bgYoutube;
+                if (ytPlayer && ytPlayer.loadVideoById) {
+                    ytPlayer.loadVideoById(currentYT);
+                    ytEl.style.opacity = '1';
                 }
-            } else if(!appData.bgYoutube) {
-                ytContainer.style.opacity = '0';
-                currentYT = '';
+            } else if (!localData.bgYoutube) {
+                ytEl.style.opacity = '0';
             }
 
-            // Running Text
-            const marquee = document.getElementById('running-text');
-            marquee.innerText = (appData.runningTexts || "").split('|').join(' • ');
+            // Update Running Text
+            const mq = document.getElementById('running-text');
+            mq.innerText = (localData.runningTexts || "Selamat Datang").split('|').join('   •   ');
             
-            // Speed (1 = lambat/30s, 20 = cepat/5s)
-            const speed = appData.runningSpeed || 10;
-            const duration = 35 - speed; 
-            marquee.style.setProperty('--speed', `${duration}s`);
+            const speed = localData.runningSpeed || 10;
+            mq.style.setProperty('--speed', `${35 - speed}s`);
         }
 
-        // --- 3. YOUTUBE API ---
+        // YouTube API
         window.onYouTubeIframeAPIReady = () => {
-            player = new YT.Player('player', {
+            ytPlayer = new YT.Player('player', {
                 height: '100%', width: '100%', videoId: '',
                 playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1, 'loop': 1, 'playlist': '' },
-                events: { 'onReady': (e) => { e.target.playVideo(); } }
+                events: { 'onReady': (e) => e.target.playVideo() }
             });
-        }
+        };
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
 
-        // STARTUP
-        // Jalankan jam immediately
-        runClockEngine();
-        // Jalankan firebase async
-        initFirebase();
-
+        // --- STARTUP ---
+        startEngine();   // JAM NYALA DULUAN
+        startFirebase(); // BARU KONEK DATABASE
     </script>
 </body>
 </html>
