@@ -3,348 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Masjid - Layout Center</title>
+    <title>Jam Proyektor Pro - Spesialis Alarm</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Library Wajib -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/adhan/3.0.0/Adhan.min.js"></script>
-    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;600;800&display=swap');
-        
-        body { background-color: #000; color: #fff; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .font-digital { font-family: 'Orbitron', monospace; }
-        
-        /* Layer System */
-        .layer-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; transition: opacity 1s; }
-        .layer-overlay { position: absolute; inset: 0; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.4), rgba(0,0,0,0.9)); }
-        .layer-content { position: relative; z-index: 20; height: 100vh; display: flex; flex-direction: column; padding: 2.5rem; }
-        
-        /* Layout Grid */
-        .header-grid { display: flex; justify-content: space-between; align-items: flex-start; height: 150px; }
-        .center-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
-        
-        /* Glow Effects */
-        .glow-text { text-shadow: 0 0 40px rgba(255, 255, 255, 0.2); }
-        .glow-red { text-shadow: 0 0 50px rgba(220, 38, 38, 0.8); }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;500;800&display=swap');
 
-        /* Running Text */
-        .marquee-container { overflow: hidden; white-space: nowrap; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee var(--speed, 20s) linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        :root {
+            --bg-color: #000000;
+            --accent-color: #00ff88;
+            --clock-border: #ffffff;
+            --clock-size: 78vh;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+            cursor: none; /* Menyembunyikan kursor untuk tampilan proyektor */
+        }
+        
+        body:hover {
+            cursor: default;
+        }
+
+        .clock-font { font-family: 'Orbitron', sans-serif; }
+
+        /* Container Jam agar selalu proporsional */
+        .clock-wrapper {
+            position: relative;
+            width: var(--clock-size);
+            height: var(--clock-size);
+            max-width: 90vw;
+            max-height: 90vw;
+            border: 8px solid var(--clock-border);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 75%);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Penanda Menit & Jam */
+        .marker-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .marker {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            left: calc(50% - 1px);
+            top: 0;
+            padding: 12px 0;
+        }
+
+        .marker::before {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 18px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .marker-large::before {
+            height: 35px;
+            width: 6px;
+            margin-left: -2px;
+            background: var(--accent-color);
+        }
+
+        /* Angka Jam */
+        .clock-number {
+            position: absolute;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: white;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        /* Jarum Jam */
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom;
+            border-radius: 20px;
+            z-index: 10;
+            transform: translateX(-50%);
+        }
+
+        .hour-hand { 
+            width: 14px; 
+            height: 25%; 
+            background: white; 
+        }
+        .min-hand { 
+            width: 8px; 
+            height: 38%; 
+            background: #e2e8f0; 
+        }
+        .sec-hand { 
+            width: 3px; 
+            height: 44%; 
+            background: #ff4757; 
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
+        }
+        
+        .center-dot {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            background: var(--accent-color);
+            border: 4px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+
+        /* Alarm Animasi */
+        @keyframes alarm-flash {
+            0%, 100% { background-color: #000000; }
+            50% { background-color: #7f1d1d; }
+        }
+        .alarm-active { animation: alarm-flash 0.5s infinite; }
+
+        /* Sidebar Kontrol Tersembunyi */
+        .sidebar {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(25px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            right: 0;
+            top: 0;
+            transform: translateX(100%);
+            transition: transform 0.4s ease;
+        }
+
+        body.show-settings .sidebar { transform: translateX(0); }
+        
+        /* Instruksi saat hover/idle */
+        #hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        body:hover #hint { opacity: 1; }
     </style>
 </head>
-<body>
+<body class="flex h-screen w-screen overflow-hidden" ondblclick="toggleControls()">
 
-    <!-- 1. Background Layers -->
-    <div id="bg-color" class="layer-bg" style="background-color: #020617;"></div>
-    <div id="bg-image" class="layer-bg" style="opacity: 0;"></div>
-    <div id="bg-youtube" class="layer-bg" style="opacity: 0; pointer-events: none;">
-        <div id="player" class="w-full h-[140%] -mt-[10%] opacity-60"></div>
-    </div>
-    
-    <div class="layer-overlay"></div>
+    <div id="hint">Klik dua kali untuk pengaturan</div>
 
-    <!-- 2. Content -->
-    <div class="layer-content">
+    <!-- Area Tampilan Utama -->
+    <main class="flex-1 flex flex-col items-center justify-center relative">
         
-        <!-- HEADER: Kiri (Tanggal), Kanan (Countdown) -->
-        <div class="header-grid">
-            <!-- Kiri: Tanggal -->
-            <div>
-                <h2 id="date-el" class="text-3xl font-bold uppercase tracking-wide text-gray-200">Memuat Tanggal...</h2>
-                <p id="hijri-el" class="text-xl text-yellow-500 font-medium mt-1">...</p>
-            </div>
-
-            <!-- Kanan: Info Menuju Waktu -->
-            <div id="info-panel" class="text-right">
-                <div class="text-gray-400 font-bold uppercase tracking-widest text-sm mb-1">Menuju Waktu</div>
-                <div id="next-prayer-name" class="text-3xl font-black text-white uppercase">...</div>
-                <div id="countdown-el" class="text-5xl font-digital text-yellow-400 mt-[-5px]">--:--:--</div>
-            </div>
-        </div>
-
-        <!-- CENTER: Jam Besar / Overlay Sholat -->
-        <div class="center-stage">
+        <!-- Wadah Jam Analog -->
+        <div class="clock-wrapper" id="clock-container">
+            <div id="markers-container" class="marker-container"></div>
             
-            <!-- JAM UTAMA (Default) -->
-            <div id="main-clock-container" class="text-center transition-all duration-500">
-                <div id="clock-el" class="text-[14rem] font-bold font-digital leading-none tracking-tighter glow-text select-none">
-                    00:00:00
-                </div>
-            </div>
-
-            <!-- OVERLAY WAKTUNYA SHOLAT (Hidden by default) -->
-            <div id="sholat-overlay" class="hidden absolute inset-0 flex items-center justify-center backdrop-blur-md bg-black/60 z-50 rounded-3xl animate-pulse">
-                <div class="text-center">
-                    <h1 class="text-[8rem] font-black italic text-red-500 leading-none glow-red uppercase">WAKTUNYA<br>SHOLAT</h1>
-                    <p id="sholat-name-active" class="text-6xl text-white font-bold mt-4 uppercase tracking-[1rem]"></p>
-                </div>
-            </div>
-
+            <div class="hand hour-hand" id="hour-hand"></div>
+            <div class="hand min-hand" id="min-hand"></div>
+            <div class="hand sec-hand" id="sec-hand"></div>
+            <div class="center-dot"></div>
         </div>
 
-        <!-- FOOTER: Jadwal 5 Waktu -->
-        <div class="grid grid-cols-5 gap-6 mt-auto mb-6">
-            <div class="bg-white/5 border-t-4 border-blue-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
-                <div class="text-gray-400 text-sm font-bold uppercase">Subuh</div>
-                <div id="time-fajr" class="text-4xl font-digital text-white mt-1">--:--</div>
+        <!-- Info Digital di bawah jam -->
+        <div class="absolute bottom-12 flex flex-col items-center gap-2">
+            <div id="digital-clock" class="text-6xl font-bold clock-font tracking-widest text-white opacity-30">
+                00:00:00
             </div>
-            <div class="bg-white/5 border-t-4 border-yellow-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
-                <div class="text-gray-400 text-sm font-bold uppercase">Dzuhur</div>
-                <div id="time-dhuhr" class="text-4xl font-digital text-white mt-1">--:--</div>
-            </div>
-            <div class="bg-white/5 border-t-4 border-green-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
-                <div class="text-gray-400 text-sm font-bold uppercase">Ashar</div>
-                <div id="time-asr" class="text-4xl font-digital text-white mt-1">--:--</div>
-            </div>
-            <div class="bg-white/5 border-t-4 border-orange-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
-                <div class="text-gray-400 text-sm font-bold uppercase">Maghrib</div>
-                <div id="time-maghrib" class="text-4xl font-digital text-white mt-1">--:--</div>
-            </div>
-            <div class="bg-white/5 border-t-4 border-indigo-500 p-4 rounded-xl text-center backdrop-blur-sm shadow-lg">
-                <div class="text-gray-400 text-sm font-bold uppercase">Isya</div>
-                <div id="time-isha" class="text-4xl font-digital text-white mt-1">--:--</div>
+            <p id="date-display" class="text-sm opacity-20 font-bold uppercase tracking-[0.3em]"></p>
+        </div>
+    </main>
+
+    <!-- Sidebar Kontrol (Hanya muncul saat Double Click) -->
+    <aside id="controls" class="sidebar w-80 h-full p-8 overflow-y-auto z-50">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-xl font-black">PENGATURAN</h2>
+            <button onclick="toggleControls()" class="text-2xl hover:text-emerald-400">✕</button>
+        </div>
+
+        <div class="bg-white/5 p-5 rounded-2xl mb-6 border border-white/10">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-bold uppercase tracking-widest opacity-40 block mb-2">Nama Alarm</label>
+                    <input type="text" id="alarm-label" placeholder="..." class="w-full bg-black border border-white/10 rounded-lg p-2 focus:border-emerald-400 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold uppercase tracking-widest opacity-40 block mb-2">Waktu</label>
+                    <input type="time" id="alarm-time" class="w-full bg-black border border-white/10 rounded-lg p-2 focus:border-emerald-400 outline-none text-xl font-bold">
+                </div>
+                <button onclick="addAlarm()" class="w-full bg-emerald-500 text-black font-black py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all">
+                    Tambah Alarm
+                </button>
             </div>
         </div>
 
-        <!-- RUNNING TEXT -->
-        <div class="bg-blue-900/90 py-3 -mx-10 -mb-10 border-t border-white/10">
-            <div class="marquee-container">
-                <div id="running-text" class="marquee-text text-2xl font-semibold">
-                    Selamat Datang di Masjid...
-                </div>
-            </div>
-        </div>
+        <div id="alarm-list" class="space-y-3"></div>
 
+        <div class="mt-8 pt-6 border-t border-white/10">
+            <button onclick="toggleFullscreen()" class="w-full py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 text-[10px] font-bold uppercase">
+                Fullscreen
+            </button>
+        </div>
+    </aside>
+
+    <!-- Overlay Alarm -->
+    <div id="alarm-overlay" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-red-600/90 backdrop-blur-xl">
+        <div class="animate-pulse mb-4 text-8xl">⏰</div>
+        <h2 id="overlay-label" class="text-4xl font-black mb-2 uppercase text-white">WAKTU HABIS!</h2>
+        <div id="overlay-time" class="text-9xl font-bold mb-12 clock-font text-white">00:00</div>
+        <button onclick="stopAlarm()" class="bg-white text-red-600 px-12 py-4 rounded-xl text-2xl font-black hover:scale-105 active:scale-95 transition-all">
+            MATIKAN
+        </button>
     </div>
 
-    <!-- 3. LOGIC SCRIPT (Robust & Safe) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    <audio id="alarm-sound" loop>
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
 
-        // CONFIG DASAR (Fallback jika Firebase gagal)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDiM9qD23njTQ6G8m8qzkUsNWRuQPd2SeY",
-            authDomain: "ledd-f6b0f.firebaseapp.com",
-            projectId: "ledd-f6b0f",
-            storageBucket: "ledd-f6b0f.firebasestorage.app",
-            messagingSenderId: "341802454320",
-            appId: "1:341802454320:web:e0d13b16d14bc1ff5d8cf5"
-        };
+    <script>
+        let alarms = [];
 
-        // State Global
-        let localData = {
-            bgColor: '#020617',
-            bgImage: '',
-            bgYoutube: '',
-            runningTexts: 'Selamat Datang di Masjid Kami',
-            runningSpeed: 10,
-            prayerManual: {}
-        };
-        let ytPlayer;
-        let currentYT = "";
+        function initClockElements() {
+            const markerContainer = document.getElementById('markers-container');
+            const clockContainer = document.getElementById('clock-container');
+            
+            for (let i = 0; i < 60; i++) {
+                const marker = document.createElement('div');
+                marker.className = i % 5 === 0 ? 'marker marker-large' : 'marker';
+                marker.style.transform = `rotate(${i * 6}deg)`;
+                markerContainer.appendChild(marker);
+            }
 
-        // --- A. ENGINE JAM & JADWAL (Jalan Duluan) ---
-        function startEngine() {
-            updateClock();
-            setInterval(updateClock, 1000); // Detik jam
+            const radius = 34; 
+            for (let i = 1; i <= 12; i++) {
+                const number = document.createElement('div');
+                number.className = 'clock-number clock-font';
+                number.textContent = i;
+                const angle = (i * 30) - 90;
+                const x = 50 + radius * Math.cos(angle * Math.PI / 180);
+                const y = 50 + radius * Math.sin(angle * Math.PI / 180);
+                number.style.left = `${x}%`;
+                number.style.top = `${y}%`;
+                clockContainer.appendChild(number);
+            }
         }
 
         function updateClock() {
             const now = new Date();
-            
-            // 1. Render Jam Tengah Realtime
-            const h = String(now.getHours()).padStart(2,'0');
-            const m = String(now.getMinutes()).padStart(2,'0');
-            const s = String(now.getSeconds()).padStart(2,'0');
-            document.getElementById('clock-el').innerText = `${h}:${m}:${s}`;
+            const sec = now.getSeconds();
+            const min = now.getMinutes();
+            const hour = now.getHours();
 
-            // 2. Render Tanggal (Cek Library Moment)
-            if (window.moment) {
-                moment.locale('id');
-                const mNow = moment(now);
-                document.getElementById('date-el').innerText = mNow.format('dddd, D MMMM YYYY');
-                
-                // Hijriah
-                const hijri = new Intl.DateTimeFormat('id-TN-u-ca-islamic-uma-nu-latn', {day:'numeric', month:'long', year:'numeric'}).format(now);
-                document.getElementById('hijri-el').innerText = hijri + " H";
+            const secDeg = (sec / 60) * 360;
+            const minDeg = (min / 60) * 360 + (sec / 60) * 6;
+            const hourDeg = (hour % 12 / 12) * 360 + (min / 60) * 30;
 
-                // 3. Hitung Logic Sholat
-                calculatePrayerLogic(mNow);
-            }
+            document.getElementById('sec-hand').style.transform = `translateX(-50%) rotate(${secDeg}deg)`;
+            document.getElementById('min-hand').style.transform = `translateX(-50%) rotate(${minDeg}deg)`;
+            document.getElementById('hour-hand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+
+            const timeStr = [hour, min, sec].map(v => v.toString().padStart(2, '0')).join(':');
+            document.getElementById('digital-clock').textContent = timeStr;
+
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('date-display').textContent = now.toLocaleDateString('id-ID', options);
+
+            if (sec === 0) checkAlarms(hour, min);
         }
 
-        function calculatePrayerLogic(mNow) {
-            // Koordinat Jakarta (Default)
-            const coords = new adhan.Coordinates(-6.2088, 106.8456);
-            const params = adhan.CalculationMethod.Singapore();
-            const prayerTimes = new adhan.PrayerTimes(coords, new Date(), params);
-            
-            const pList = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-            let nextP = null;
-            let minDiff = Infinity;
-            let isSholatTime = false;
-            let activeName = "";
+        function addAlarm() {
+            const timeInput = document.getElementById('alarm-time');
+            const labelInput = document.getElementById('alarm-label');
+            if (!timeInput.value) return;
 
-            pList.forEach(key => {
-                // Ambil jam (Otomatis vs Manual)
-                let timeStr = moment(prayerTimes[key]).format('HH:mm');
-                if (localData.prayerManual && localData.prayerManual[key]) {
-                    timeStr = localData.prayerManual[key];
-                }
-
-                // Render ke Footer
-                const el = document.getElementById(`time-${key}`);
-                if(el) el.innerText = timeStr;
-
-                // Hitung Logic
-                const pTime = moment(timeStr, 'HH:mm');
-                const diff = pTime.diff(mNow, 'seconds');
-
-                // Logic "WAKTUNYA SHOLAT" (5 Menit Fix)
-                const endTime = pTime.clone().add(5, 'minutes'); // FIX 5 MENIT
-                
-                // Jika SEKARANG ada di antara WAKTU SHOLAT dan WAKTU SHOLAT + 5 MENIT
-                if (mNow.isSameOrAfter(pTime) && mNow.isBefore(endTime)) {
-                    isSholatTime = true;
-                    activeName = key;
-                }
-
-                // Cari Next Prayer
-                if (diff > 0 && diff < minDiff) {
-                    minDiff = diff;
-                    nextP = key;
-                }
+            alarms.push({
+                id: Date.now(),
+                time: timeInput.value,
+                label: labelInput.value || "Alarm",
+                enabled: true
             });
-
-            updateUIState(isSholatTime, activeName, nextP, minDiff);
+            renderAlarms();
+            timeInput.value = '';
+            labelInput.value = '';
         }
 
-        function updateUIState(isSholat, sholatName, nextKey, diffSeconds) {
-            const overlay = document.getElementById('sholat-overlay');
-            const mainClock = document.getElementById('main-clock-container');
-            const infoPanel = document.getElementById('info-panel');
-
-            if (isSholat) {
-                // TAMPILKAN OVERLAY MERAH
-                overlay.classList.remove('hidden');
-                mainClock.classList.add('blur-sm'); // Blur jam belakang
-                
-                let label = sholatName;
-                if(label === 'fajr') label = 'Subuh';
-                if(label === 'dhuhr') label = 'Dzuhur';
-                if(label === 'asr') label = 'Ashar';
-                if(label === 'maghrib') label = 'Maghrib';
-                if(label === 'isha') label = 'Isya';
-                document.getElementById('sholat-name-active').innerText = label;
-
-                // Sembunyikan info next
-                infoPanel.style.opacity = '0';
-
-            } else {
-                // KEMBALI NORMAL
-                overlay.classList.add('hidden');
-                mainClock.classList.remove('blur-sm');
-                infoPanel.style.opacity = '1';
-
-                // Update Countdown Pojok Kanan Atas
-                if (nextKey) {
-                    let label = nextKey;
-                    if(label === 'fajr') label = 'Subuh';
-                    if(label === 'dhuhr') label = 'Dzuhur';
-                    if(label === 'asr') label = 'Ashar';
-                    if(label === 'maghrib') label = 'Maghrib';
-                    if(label === 'isha') label = 'Isya';
-                    
-                    document.getElementById('next-prayer-name').innerText = label;
-
-                    const dur = moment.duration(diffSeconds, 'seconds');
-                    const hh = String(Math.floor(dur.asHours())).padStart(2, '0');
-                    const mm = String(dur.minutes()).padStart(2, '0');
-                    const ss = String(dur.seconds()).padStart(2, '0');
-                    document.getElementById('countdown-el').innerText = `${hh}:${mm}:${ss}`;
-                }
-            }
-        }
-
-        // --- B. FIREBASE SYNC (Jalan Belakangan & Aman Error) ---
-        async function startFirebase() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
-                const auth = getAuth(app);
-                
-                await signInAnonymously(auth);
-                console.log("Firebase Connected!");
-
-                const docRef = doc(db, 'artifacts', 'masjid-v1', 'public', 'data', 'config', 'main');
-                
-                onSnapshot(docRef, (snap) => {
-                    if (snap.exists()) {
-                        const serverData = snap.data();
-                        localData = { ...localData, ...serverData };
-                        renderVisuals();
-                    }
-                });
-
-            } catch (err) {
-                console.error("Firebase Gagal (Mode Offline):", err);
-                // Tidak perlu alert, jam tetap jalan karena startEngine() terpisah
-            }
-        }
-
-        function renderVisuals() {
-            // Update Background
-            if(localData.bgColor) document.getElementById('bg-color').style.backgroundColor = localData.bgColor;
-            
-            const bgImg = document.getElementById('bg-image');
-            if(localData.bgImage) {
-                bgImg.style.backgroundImage = `url('${localData.bgImage}')`;
-                bgImg.style.opacity = '1';
-            } else {
-                bgImg.style.opacity = '0';
-            }
-
-            // Update YouTube
-            const ytEl = document.getElementById('bg-youtube');
-            if (localData.bgYoutube && localData.bgYoutube !== currentYT) {
-                currentYT = localData.bgYoutube;
-                if (ytPlayer && ytPlayer.loadVideoById) {
-                    ytPlayer.loadVideoById(currentYT);
-                    ytEl.style.opacity = '1';
-                }
-            } else if (!localData.bgYoutube) {
-                ytEl.style.opacity = '0';
-            }
-
-            // Update Running Text
-            const mq = document.getElementById('running-text');
-            mq.innerText = (localData.runningTexts || "Selamat Datang").split('|').join('   •   ');
-            
-            const speed = localData.runningSpeed || 10;
-            mq.style.setProperty('--speed', `${35 - speed}s`);
-        }
-
-        // YouTube API
-        window.onYouTubeIframeAPIReady = () => {
-            ytPlayer = new YT.Player('player', {
-                height: '100%', width: '100%', videoId: '',
-                playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1, 'loop': 1, 'playlist': '' },
-                events: { 'onReady': (e) => e.target.playVideo() }
+        function renderAlarms() {
+            const list = document.getElementById('alarm-list');
+            list.innerHTML = '';
+            alarms.sort((a, b) => a.time.localeCompare(b.time)).forEach(alarm => {
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${alarm.enabled ? 'bg-white/5 border-white/10' : 'bg-black opacity-30'}`;
+                div.innerHTML = `
+                    <div>
+                        <div class="text-lg font-bold clock-font">${alarm.time}</div>
+                        <div class="text-[8px] opacity-50 uppercase truncate w-24">${alarm.label}</div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="toggleAlarm(${alarm.id})" class="p-2 hover:bg-white/10 rounded"> ${alarm.enabled ? '🔔' : '🔕'} </button>
+                        <button onclick="deleteAlarm(${alarm.id})" class="p-2 text-red-400"> ✕ </button>
+                    </div>
+                `;
+                list.appendChild(div);
             });
+        }
+
+        function toggleAlarm(id) {
+            const a = alarms.find(x => x.id === id);
+            if (a) a.enabled = !a.enabled;
+            renderAlarms();
+        }
+
+        function deleteAlarm(id) {
+            alarms = alarms.filter(x => x.id !== id);
+            renderAlarms();
+        }
+
+        function checkAlarms(h, m) {
+            const nowTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            alarms.forEach(alarm => {
+                if (alarm.enabled && alarm.time === nowTime) triggerAlarm(alarm);
+            });
+        }
+
+        function triggerAlarm(alarm) {
+            document.body.classList.add('alarm-active');
+            const overlay = document.getElementById('alarm-overlay');
+            overlay.classList.remove('hidden');
+            document.getElementById('overlay-label').textContent = alarm.label;
+            document.getElementById('overlay-time').textContent = alarm.time;
+            document.getElementById('alarm-sound').play().catch(() => {});
+        }
+
+        function stopAlarm() {
+            document.body.classList.remove('alarm-active');
+            document.getElementById('alarm-overlay').classList.add('hidden');
+            const sound = document.getElementById('alarm-sound');
+            sound.pause();
+            sound.currentTime = 0;
+        }
+
+        function toggleControls() {
+            document.body.classList.toggle('show-settings');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+
+        window.onload = () => {
+            initClockElements();
+            setInterval(updateClock, 1000);
+            updateClock();
         };
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-
-        // --- STARTUP ---
-        startEngine();   // JAM NYALA DULUAN
-        startFirebase(); // BARU KONEK DATABASE
     </script>
 </body>
 </html>
