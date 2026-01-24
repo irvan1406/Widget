@@ -117,7 +117,7 @@
     <script>
         // --- KONFIGURASI SAKTI ---
         const TARGET_WA = "6287745756269";
-        const API_KEY = "AIzaSyAmmzHzAJOJZGfQe34GANJep7XC1rWzl5M";
+        const apiKey = ""; // Dikosongkan agar environment otomatis mengisi key runtime
 
         lucide.createIcons();
 
@@ -149,36 +149,49 @@
                 processLabel.innerText = "Checking EXIF Metadata...";
                 const exif = await getExif(file);
                 if (exif) {
-                    finish(exif.lat, exif.lng, "EXIF");
+                    finish(exif.lat, exif.lng, "EXIF Metadata");
                     return;
                 }
 
                 // LAPIS 2 & 3: AI SCAN (OCR & VISUAL)
                 processLabel.innerText = "Layer 1 Gagal. Analyzing AI Vision...";
                 const base64 = await toBase64(file);
-                const ai = await callGemini(base64);
+                const ai = await callGeminiWithRetry(base64);
 
                 if (ai && ai.status === "DITEMUKAN" && validate(ai.lat, ai.lng)) {
                     finish(ai.lat, ai.lng, ai.source);
                 } else {
-                    showError("Lokasi tidak terdeteksi dari foto ini");
+                    showError("Lokasi tidak terdeteksi dari foto ini. AI tidak menemukan data GPS.");
                 }
 
             } catch (err) {
                 console.error(err);
-                showError("Gagal memproses AI. Periksa koneksi atau API Key.");
+                showError("Gagal memproses AI. Periksa koneksi atau coba lagi nanti.");
             } finally {
                 uiLoading.classList.add('hidden');
             }
         });
 
+        async function callGeminiWithRetry(base64, retries = 5) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    return await callGemini(base64);
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
         async function callGemini(base64) {
             const prompt = `TUGAS: SCAN LOKASI FOTO.
-            1. CEK OCR: Cari teks koordinat (Lat, Long) atau DMS.
-            2. CEK VISUAL: Cari landmark, jalan, atau ciri geografis.
-            HANYA BALAS JSON: {"status":"DITEMUKAN/TIDAK DITEMUKAN","source":"TEKS FOTO/VISUAL IDENTIFIKASI","lat":number,"lng":number}`;
+            1. CEK OCR: Cari teks koordinat (Lat, Long) atau DMS di gambar.
+            2. CEK VISUAL: Cari landmark, jalan, atau ciri geografis unik.
+            HASIL HARUS DALAM FORMAT JSON BERIKUT:
+            {"status":"DITEMUKAN/TIDAK DITEMUKAN","source":"TEKS FOTO/VISUAL IDENTIFIKASI","lat":number,"lng":number}`;
 
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -188,11 +201,22 @@
                             { inlineData: { mimeType: 'image/jpeg', data: base64.split(',')[1] } }
                         ]
                     }],
-                    generationConfig: { responseMimeType: "application/json" }
+                    generationConfig: { 
+                        responseMimeType: "application/json"
+                    }
                 })
             });
-            const data = await res.json();
-            return JSON.parse(data.candidates[0].content.parts[0].text);
+
+            if (!response.ok) throw new Error('API request failed');
+            
+            const result = await response.json();
+            const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (!textResponse) throw new Error('No content returned');
+            
+            // Bersihkan teks jika ada markdown backticks
+            const cleanJson = textResponse.replace(/```json|```/gi, '').trim();
+            return JSON.parse(cleanJson);
         }
 
         function getExif(file) {
@@ -202,7 +226,8 @@
                     const lng = EXIF.getTag(this, "GPSLongitude");
                     const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
                     const lngRef = EXIF.getTag(this, "GPSLongitudeRef") || "E";
-                    if (lat && lng) {
+                    
+                    if (lat && lng && Array.isArray(lat)) {
                         const dLat = lat[0] + lat[1]/60 + lat[2]/3600;
                         const dLng = lng[0] + lng[1]/60 + lng[2]/3600;
                         resolve({ 
@@ -215,32 +240,38 @@
         }
 
         function validate(lat, lng) {
-            return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+            return typeof lat === 'number' && typeof lng === 'number' && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
         }
 
         function finish(lat, lng, source) {
-            const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+            const latVal = parseFloat(lat);
+            const lngVal = parseFloat(lng);
+            const mapsUrl = `https://www.google.com/maps?q=${latVal},${lngVal}`;
+            
             labelSource.innerText = `SOURCE: ${source}`;
-            coordText.innerText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            coordText.innerText = `${latVal.toFixed(6)}, ${lngVal.toFixed(6)}`;
             linkMaps.href = mapsUrl;
             
             btnWA.onclick = () => {
-                const text = `📍 LOKASI FOTO TERDETEKSI\nSumber: ${source}\nKoordinat: ${lat}, ${lng}\nGoogle Maps:\n${mapsUrl}`;
+                const text = `📍 LOKASI FOTO TERDETEKSI\nSumber: ${source}\nKoordinat: ${latVal}, ${lngVal}\nGoogle Maps:\n${mapsUrl}`;
                 window.open(`https://wa.me/${TARGET_WA}?text=${encodeURIComponent(text)}`, '_blank');
             };
 
             document.getElementById('res-success').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function showError(msg) {
             document.getElementById('errorMessage').innerText = msg;
             document.getElementById('res-error').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function toBase64(file) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
                 reader.readAsDataURL(file);
             });
         }
